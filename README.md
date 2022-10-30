@@ -3,7 +3,7 @@
 [**Overview**](#overview)
 | [**Intallation**](#installation)
 | [**Quickstart**](#quickstart)
-| [**Examples**](#https://github.com/zongyf02/mlax/tree/main/examples)
+| [**Examples**](https://github.com/zongyf02/mlax/tree/main/examples)
 | **Documentation (Coming very soon)**
 
 ## What is [mlax]?<a id="overview"></a>
