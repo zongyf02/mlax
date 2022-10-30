@@ -1,0 +1,37 @@
+mlax.nn package
+===============
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   mlax.nn.blocks
+
+Submodules
+----------
+
+mlax.nn.bias module
+-------------------
+
+.. automodule:: mlax.nn.bias
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+mlax.nn.linear module
+---------------------
+
+.. automodule:: mlax.nn.linear
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: mlax.nn
+   :members:
+   :undoc-members:
+   :show-inheritance:
