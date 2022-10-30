@@ -19,7 +19,8 @@ setup(
         "License :: OSI Approved :: MIT License",
     ],
     install_requires = [
-        "jax>=0.3.21"
+        "jax>=0.3.23",
+        "jaxlib>=0.3.22"
     ],
     extras_require = {
         "dev" : [
