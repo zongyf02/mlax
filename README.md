@@ -31,7 +31,7 @@ transformations like `vmap` and `pmap` without any caveats, which makes
 model-parallelism very easy to develop in [mlax].
 
 ## Sharp bits<a id="sharp-bits"></a>
-[mlax] is an actively developped research project. Expect some sharp edges!
+[mlax] is an actively developed research project. Expect some sharp bits!
 
 In addition to [JAX's sharp bits](https://jax.readthedocs.io/en/latest/notebooks/Common_Gotchas_in_JAX.html),
 here are some behaviors of [mlax] that differ from other ML libraries:
@@ -51,18 +51,24 @@ mixed precision training.
 
 ## Installation<a id="installation"></a>
 [mlax] is written in pure Python. You can install [mlax] using `pip`.
+
 ```pip install mlax-nn```
 
 You can also install from source. First clone the repository:
+
 ```git clone https://github.com/zongyf02/mlax.git```
+
 Move into the cloned repository, then build a Python wheel.
+
 ```python3 setup.py bdist_wheel```
+
 Finally, install the wheel locally.
+
 ```pip install -e mlax-nn```
 
 ## Quickstart<a id="quickstart"></a>
 First, I recommend going through [JAX's quickstart guide](https://jax.readthedocs.io/en/latest/notebooks/quickstart.html).
-Then take a look at some [examples] (https://github.com/zongyf02/mlax/tree/main/examples).
+Then take a look at some [examples](https://github.com/zongyf02/mlax/tree/main/examples).
 Read the API reference here (coming soon.)
 
 ## Bugs and Feature Requests
