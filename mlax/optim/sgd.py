@@ -1,19 +1,24 @@
 from jax import lax
 from jax import tree_util
+from typing import NamedTuple, Any
+
+class State(NamedTuple):
+    velocities: Any
 
 def init(weights):
     """Initialize state for an SGD optimizer.
 
     :param weights: Pytree containing the weights for the SGD to optimize.
 
-    :returns state: Pytree of the same structure as ``weights``, where each leaf
-        contains a zero initial velocity array of the same shape as the
-        corresponding leaf in ``weights``.
+    :returns state: State containing a pytree of the same structure as
+        ``weights``, where each leaf contains a zero initial velocity array of
+        the same shape as the corresponding leaf in ``weights``.
     """
-    return tree_util.tree_map(
+    velocities = tree_util.tree_map(
         lambda w: lax.full_like(w, 0, w.dtype),
         weights
     )
+    return State(velocities)
 
 def step(
     gradients,
@@ -25,7 +30,7 @@ def step(
     """Find the gradients for a single optimization step.
 
     :param gradients: Gradients to optimize on.
-    :param optim_sate: State of optmizer. Must result from ``init`` on
+    :param optim_sate: State of optmizer. Must be resulted from ``init`` on
         ``weights`` of the same shape as ``gradients``.
     :param lr: Learning rate. Default: 0.01
     :param momentum: SGD momentum. Default: 0.0
@@ -53,14 +58,14 @@ def step(
 
         return gradients, velocity
     
-    gradients, optim_state = tree_util.tree_transpose(
+    gradients, velocities = tree_util.tree_transpose(
         outer_treedef = tree_util.tree_structure(gradients),
         inner_treedef = tree_util.tree_structure((0, 0)),
         pytree_to_transpose = tree_util.tree_map(
             lambda g, s: _step(g, s),
-            gradients, optim_state
+            gradients, optim_state.velocities
         )
     )
 
-    return gradients, optim_state
+    return gradients, State(velocities)
     

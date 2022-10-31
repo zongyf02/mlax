@@ -22,10 +22,10 @@ def init(
     :param in_features: Number of input features.
     :param out_features: Number of desired output features.
     :param kernel_initializer: Initializer as defined by
-        ``jax.nn.initalizers <https://jax.readthedocs.io/en/latest/jax.nn.initializers.html>``.
+        `jax.nn.initalizers <https://jax.readthedocs.io/en/latest/jax.nn.initializers.html>`_.
         Default:: glorot uniform.
     :param bias_initializer: Initializer as defined by
-        ``jax.nn.initalizers <https://jax.readthedocs.io/en/latest/jax.nn.initializers.html>``.
+        `jax.nn.initalizers <https://jax.readthedocs.io/en/latest/jax.nn.initializers.html>`_.
         Default:: zeros.
     :param dtype: Type of the weights. Default: float32.
 
@@ -48,14 +48,14 @@ def fwd(
     """Apply linear transformation with bias to input features.
 
     :param x: Input features to the Linear block. Must be of the shape
-        ``(num_in_features,)`` and of the same type as ``weights``.
+        ``(num_in_features,)`` and of the same type as elements of ``weights``.
     :param weights: Initialized weights for a Linear block.
-    :param activation_fn: Activation functions of the form Array -> Array. See
-        ``jax.nn <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.dot.html#jax.lax.dot>``.
+    :param activation_fn: Activation functions of the signature ``Array -> Array``. See
+        `jax.nn <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.dot.html#jax.lax.dot>`_.
         for examples.
         Default: None, no activation function is applied.
     :param precision: See ``precision`` parameter of
-        ``jax.lax.dot <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.dot.html#jax.lax.dot>``,
+        `jax.lax.dot <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.dot.html#jax.lax.dot>`_,
         which is used internally in the Linear block.
         Default None.
 
