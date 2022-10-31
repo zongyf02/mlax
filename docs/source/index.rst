@@ -10,6 +10,7 @@ Welcome to mlax's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   overview
    apidocs/modules 
 
 

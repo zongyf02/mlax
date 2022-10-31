@@ -4,7 +4,7 @@
 | [**Intallation**](#installation)
 | [**Quickstart**](#quickstart)
 | [**Examples**](https://github.com/zongyf02/mlax/tree/main/examples)
-| **Documentation (Coming very soon)**
+| [**Documentation**](https://mlax.readthedocs.io/en/latest/)
 
 ## What is [mlax]?<a id="overview"></a>
 [mlax] is a ML library built with Google [JAX], and it follows [JAX]'s
@@ -67,9 +67,16 @@ Finally, install the wheel locally.
 ```pip install -e mlax-nn```
 
 ## Quickstart<a id="quickstart"></a>
-First, I recommend going through [JAX's quickstart guide](https://jax.readthedocs.io/en/latest/notebooks/quickstart.html).
-Then take a look at some [examples](https://github.com/zongyf02/mlax/tree/main/examples).
-Read the API reference here (coming soon.)
+Before you start, I recommend going through JAX's
+[quickstart guide](https://jax.readthedocs.io/en/latest/notebooks/quickstart.html),
+and the [worked example on statefule computations](https://jax.readthedocs.io/en/latest/jax-101/07-state.html#simple-worked-example-linear-regression).
+
+Then take a look at mlax's [API Overview](https://mlax.readthedocs.io/en/latest/overview.html).
+
+Run some [examples](https://github.com/zongyf02/mlax/tree/main/examples) with
+reference implementations in [Pytorch].
+
+Finally, read the [API Reference](https://mlax.readthedocs.io/en/latest/apidocs/modules.html).
 
 ## Bugs and Feature Requests
 Please [create an issue](https://github.com/zongyf02/mlax/issues) on [mlax]'s
