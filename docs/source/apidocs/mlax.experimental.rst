@@ -1,5 +1,5 @@
-mlax package
-============
+mlax.experimental package
+=========================
 
 Subpackages
 -----------
@@ -7,14 +7,13 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   mlax.blocks
-   mlax.experimental
-   mlax.nn
+   mlax.experimental.losses
+   mlax.experimental.optim
 
 Module contents
 ---------------
 
-.. automodule:: mlax
+.. automodule:: mlax.experimental
    :members:
    :undoc-members:
    :show-inheritance:

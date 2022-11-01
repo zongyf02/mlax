@@ -25,10 +25,14 @@ programming model, which should be familiar to anyone coming from [Tensorflow]
 or [Pytorch].
 
 On the other hand, [mlax] favors function-based programming. Models are simply
-compositions of transformations. This allows for finer control of the parameters
-and dataflow. This also allows [mlax] functions can be composed with [JAX]
-transformations like `vmap` and `pmap` without any caveats, which makes
-model-parallelism very easy to develop in [mlax].
+compositions of pure functions, which allows [mlax] to be used with [JAX]
+without any caveats. Thanks to [JAX]'s `vmap` and `pmap`, model-parallelism
+is easy and intuitive with [mlax].
+
+[mlax] also offers strong dtype guarantees. Unless explicitly overriden, [mlax]
+functions perform internal operations in the same type as its inputs, and ouputs
+the same type as well. This makes mixed-precision training explicit and allows
+for custom mixed-precision behavior.
 
 ## Sharp bits<a id="sharp-bits"></a>
 [mlax] is an actively developed research project. Expect some sharp bits!
@@ -43,11 +47,6 @@ their input is a single unbatched sample. To get functions that work on batched
 inputs, use [JAX]'s `vmap` or `pmap` transformations. This is to offer more
 flexibility when parallelizing models and when handling different bactch
 dimensions.
-3. **Loss functions follow their mathematical definitions**: This may cause
-unexpected behaviours. For example, `mlax.losses.categorical_crossentropy` does
-not clip input predictions, which means predictions containing 0 will result in
-a NaN loss. This is to allow maximum flexibility when doing loss scaling in
-mixed precision training.
 
 ## Installation<a id="installation"></a>
 [mlax] is written in pure Python. You can install [mlax] using `pip`.
@@ -70,6 +69,8 @@ Finally, install the wheel locally.
 Before you start, I recommend going through JAX's
 [quickstart guide](https://jax.readthedocs.io/en/latest/notebooks/quickstart.html),
 and the [worked example on statefule computations](https://jax.readthedocs.io/en/latest/jax-101/07-state.html#simple-worked-example-linear-regression).
+
+mlax relies on Optax to update its weights, read its [Quick Start](https://optax.readthedocs.io/en/latest/optax-101.html) as well.
 
 Then take a look at mlax's [API Overview](https://mlax.readthedocs.io/en/latest/overview.html).
 

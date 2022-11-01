@@ -9,22 +9,27 @@ In the this overview and docs, any ambiguous term should be interpreted in a
 JAX context. For example, ``array`` means ``jax.Array``, and ``dtype`` means JAX
 ``dtype``.
 
-Unlike most ML libraries, mlax do not support implicit type conversions. This
+Unlike most ML libraries, mlax does not support implicit dtype conversions. This
 means you cannot, for example, pass ``float16`` inputs to a transformation with
 ``float32`` weights without getting a runtime error.
 
-This is to avoid ambiguity that comes with mixed-precision operations. Are the
-``float16`` inputs implicitly converted to ``float32``? or are the ``float32``
-weights down-casted to ``float16``? The former follows conventional type
-promotion, but the latter is what we expect from mixed-precision in neural
+This is to avoid the ambiguity that comes with mixed-precision operations. Are
+the ``float16`` inputs implicitly converted to ``float32``? or are the
+``float32`` weights down-casted to ``float16``? The former follows conventional
+type promotion, but the latter is what we expect from mixed-precision in neural
 networks.
 
-.. warning::
-    mlax does not implicitly perform type conversions. As a general rule, unless
-    otherwise stated, if a function takes in two or more arrays as inputs, they
-    must be of the same type.
+On the upside, mlax offers strong dtype guarantees. Unless explicitly overriden,
+all internal calculations of a function are carried out in the same dtype as its
+inputs, and the output will also be in that same dtype.
 
-Since mlax is written in JAX, mlax is fully compatible with JAX transformations,
+.. warning::
+    mlax does not perform implicit dtype conversions. As a general rule, if a
+    function takes in two or more arrays as inputs, they must be of the same
+    dtype. All internal operations will be carried out in that dtype and the
+    returned values will be of that same dtype.
+
+Since mlax is written in JAX, it is fully compatible with JAX transformations,
 notably:
 
 * `grad <https://jax.readthedocs.io/en/latest/notebooks/quickstart.html#taking-derivatives-with-grad>`_,
@@ -34,7 +39,7 @@ notably:
 
 In other words, you get the auto-differentation, auto-vectorization,
 parallelization, and jit-compile capabilities of JAX for free. As you will see,
-mlax relies on some of the above transformations to properly function.
+mlax relies on some of thos transformations to properly function.
 
 .. note::
     mlax functions are JAX functions; they can be composed with each other
@@ -50,79 +55,19 @@ a runtime error.
 This is to provide maximum flexibility when vectorizing and parallelizing
 operations. For example, parallel (grouped) convolutions can be easily achieved
 using ``vmap`` in conjunctin with ``pmap`` on the ``mlax.nn.conv2d`` operation.
-It does not require a seperate implementation from normal convolutions.
+It does not require an implementation seperate from normal convolutions.
 
 .. warning::
     Unless explicitly stated, mlax functions do not operate on batched data nor
     batched weights. Use JAX's ``vmap`` and ``pmap`` transformations to obtain
     batched versions of mlax functions.
 
-mlax contains three main modules:
+mlax contains three subpackages:
 
-* ``nn``
-* ``losses``
-* ``optim``
+.. toctree::
+   :maxdepth: 2
+   :caption: mlax 
 
-``mlax.nn``
------------
-The ``nn`` module contains the building blocks of a neural network. It is
-intended to be used with ``jax.nn`` and contains stateful
-**atomic transformations** such as ``nn.linear`` and ``nn.bias``, which performs
-a linear transformation and adds bias, respectively.
-
-.. note::
-    ``jax.nn`` contains statelss operations, ``mlax.nn`` contains stateful
-    operations.
-
-Those operations in ``nn`` are called atomic because they cannot be decomposed
-into smaller operations (without losing their meaning in a neural network
-context).
-
-Atomic transformations have two functions.
-
-* ``init`` takes in hyperparameters and returns some weights for that
-    transformation. The weights are usually arrays or tuples of arrays.
-* ``fwd`` takes in unbatched inputs, compatible weights from ``init``, and
-    performs a forward pass, returning the activations.
-
-.. warning::
-    Because mlax does not promote types implicitly, inputs and weights must be
-    of the same type. The returned activations will also be of that type.
-
-While atomic operations are great for fine-grained control, they can be
-inconvenient if you just want a well-defined neural network layer. Who wants to
-compose two functions (``nn.linear`` and ``nn.bias``) just to intialize a dense
-layer (linear transformation with bias).
-
-For that reason, the ``nn`` module has a submodule ``nn.blocks``, which contains
-common neural network blocks made from the atomic operations.
-
-The ``nn.blocks.Linear`` block, for example, combines the ``linear`` and
-``bias`` atomic operations, and also applies an optional activation function.
-
-``nn.blocks`` blocks have two functions, just like atomic operations.
-
-* ``init`` takes in hyperparameters and return block weights. The weights are
-    always instances of ``NamedTuple``.
-* ``fwd`` takes in unbatched inputs, compatible ``NamedTuple`` weights, and
-    returns final activations.
-
-.. warning::
-    Just like with atomic operations, ``nn.blocks`` blocks' inputs and weights
-    must be of the same type. All internal computations will be carried out in
-    that type, and so will be the activations.
-    
-    If you wish for some internal operations to be done in a different
-    type (for example, matrix multiplication in ``float16`` but ``reduce_sum``
-    in ``float32``), define your own blocks with atomic operations and explicit
-    type casting.
-
-``mlax.losses``
----------------
-
-Coming Soon!
-
-``mlax.optim``
---------------
-
-Coming Soon!
+   nn
+   blocks
+   experimental

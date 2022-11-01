@@ -1,14 +1,6 @@
 mlax.nn package
 ===============
 
-Subpackages
------------
-
-.. toctree::
-   :maxdepth: 4
-
-   mlax.nn.blocks
-
 Submodules
 ----------
 
