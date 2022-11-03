@@ -9,7 +9,7 @@ transformation and adds a bias, respectively.
     This is opposed to ``jax.nn``, which only contains stateless functions such
     as ``jax.nn.relu`` and ``jax.nn.softmax``.
 
-.. notes::
+.. note::
     The modules under ``mlax.nn`` and the functions under ``flax.nn`` are hereby
     referred to as **atomic transformations**. This is because they carry out
     computations that cannot be decomposed into smaller operations (without
@@ -18,8 +18,8 @@ transformation and adds a bias, respectively.
 Modules under ``mlax.nn`` each have two functions, one to intialize the module
 state, and one to carry out the computation.
 
-* ``init`` takes in hyperparameters and returns some weights, which are always 
-    arrays or tuples of arrays.
+* ``init`` takes in hyperparameters and returns some weights that are always 
+    arrays or tuples of arrays, which are `pytrees <https://jax.readthedocs.io/en/latest/pytrees.html>`_.
 * ``fwd`` takes in unbatched inputs, compatible weights from ``init``, and
     performs a forward pass, returning the activations.
 

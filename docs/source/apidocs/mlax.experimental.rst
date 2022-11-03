@@ -8,7 +8,6 @@ Subpackages
    :maxdepth: 4
 
    mlax.experimental.losses
-   mlax.experimental.optim
 
 Module contents
 ---------------

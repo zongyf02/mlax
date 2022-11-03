@@ -10,6 +10,7 @@ Subpackages
    mlax.blocks
    mlax.experimental
    mlax.nn
+   mlax.optim
 
 Module contents
 ---------------

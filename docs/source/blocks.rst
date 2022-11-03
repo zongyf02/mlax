@@ -15,7 +15,7 @@ The ``mlax.blocks.Linear`` block, for example, combines ``mlax.nn.linear``,
 ``mlax.blocks`` modules each have two functions, just like those in ``mlax.nn``.
 
 * ``init`` takes in hyperparameters and returns some weights that are always
-    instances of ``NamedTuple``.
+    instances of ``NamedTuple``, which is a `pytree <https://jax.readthedocs.io/en/latest/pytrees.html>`_.
 * ``fwd`` takes in unbatched inputs, compatible weights from ``init``, and
     returns final activations.
 

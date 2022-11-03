@@ -10,7 +10,7 @@ def init(weights):
 
     :param weights: Pytree containing the weights for the SGD to optimize.
 
-    :returns state: State containing a pytree of the same structure as
+    :returns state: State whose velocities is a pytree of the same structure as
         ``weights``, where each leaf contains a zero initial velocity array of
         the same shape as the corresponding leaf in ``weights``.
     """

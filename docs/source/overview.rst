@@ -25,9 +25,11 @@ inputs, and the output will also be in that same dtype.
 
 .. warning::
     mlax does not perform implicit dtype conversions. As a general rule, if a
-    function takes in two or more arrays as inputs, they must be of the same
-    dtype. All internal operations will be carried out in that dtype and the
-    returned values will be of that same dtype.
+    function takes in two or more arrays (or pytrees of arrays) as inputs, they
+    must be of the same dtype (or same pytree structure with leaves of the same
+    dtype). All internal operations will be carried out in that dtype and the
+    returned values will be of that dtype (or same pytree structure with leaves
+    of teh same dtype).
 
 Since mlax is written in JAX, it is fully compatible with JAX transformations,
 notably:
@@ -62,7 +64,7 @@ It does not require an implementation seperate from normal convolutions.
     batched weights. Use JAX's ``vmap`` and ``pmap`` transformations to obtain
     batched versions of mlax functions.
 
-mlax contains three subpackages:
+mlax contains four subpackages:
 
 .. toctree::
    :maxdepth: 2
@@ -70,4 +72,5 @@ mlax contains three subpackages:
 
    nn
    blocks
+   optim
    experimental
