@@ -29,12 +29,12 @@ In ``mlax``, optimizers have two functions.
     must have the same structure, and their corresponding leaves must have the
     same dtype. The output pytrees will also have the same structure, with
     the corresponding leaves being the same dtype. This is because, internally,
-    mlax uses ``jax.tree_utils`` to iterate over the trees leaf by leaf. So
+    mlax uses ``jax.tree_util`` to iterate over the trees leaf by leaf. So
     although dtypes in a pytree can be different, dtypes of respective leaves
     between pytrees must be the same.
 
 If you wish for custom behavior in your optimizers, you can define one yourself
-using ``jax.numpy`` and ``jax.tree_utils``, or you can take a look in `Optax <https://github.com/deepmind/optax>`_,
+using ``jax.numpy`` and ``jax.tree_util``, or you can take a look in `Optax <https://github.com/deepmind/optax>`_,
 which is interoperable with mlax.
 
 Helper functions

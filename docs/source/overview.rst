@@ -19,7 +19,7 @@ the ``float16`` inputs implicitly converted to ``float32``? or are the
 type promotion, but the latter is what we expect from mixed-precision in neural
 networks.
 
-On the upside, mlax offers strong dtype guarantees. Unless explicitly overriden,
+On the upside, mlax offers strong dtype guarantees. Unless explicitly stated,
 all internal calculations of a function are carried out in the same dtype as its
 inputs, and the output will also be in that same dtype.
 

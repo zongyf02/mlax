@@ -1,3 +1,7 @@
+from mlax.optim import (
+    sgd
+)
+
 from jax import tree_util
 from jax import lax
 
