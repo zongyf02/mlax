@@ -24,7 +24,7 @@ setup(
     ],
     extras_require = {
         "dev" : [
-            # "pytest>=3.8"
+            "pytest=7.2"
         ],
     },
     url="https://github.com/zongyf02/mlax",

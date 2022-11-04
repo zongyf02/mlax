@@ -30,9 +30,9 @@ without any caveats. Thanks to [JAX]'s `vmap` and `pmap`, model-parallelism
 is easy and intuitive with [mlax].
 
 [mlax] also offers strong dtype guarantees. Unless explicitly overriden, [mlax]
-functions perform internal operations in the same type as its inputs, and ouputs
-the same type as well. This makes mixed-precision training explicit and allows
-for custom mixed-precision behavior.
+functions takes in inputs of the same dtype, perform all internal operations in
+the that dtype, and ouputs the same type. This means no surprises during
+mixed-precision training.
 
 ## Sharp bits<a id="sharp-bits"></a>
 [mlax] is an actively developed research project. Expect some sharp bits!
@@ -68,7 +68,7 @@ Finally, install the wheel locally.
 ## Quickstart<a id="quickstart"></a>
 Before you start, I recommend going through JAX's
 [quickstart guide](https://jax.readthedocs.io/en/latest/notebooks/quickstart.html),
-and the [worked example on statefule computations](https://jax.readthedocs.io/en/latest/jax-101/07-state.html#simple-worked-example-linear-regression).
+and the [worked example on stateful computations](https://jax.readthedocs.io/en/latest/jax-101/07-state.html#simple-worked-example-linear-regression).
 
 mlax relies on Optax to update its weights, read its [Quick Start](https://optax.readthedocs.io/en/latest/optax-101.html) as well.
 
