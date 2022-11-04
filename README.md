@@ -49,21 +49,12 @@ flexibility when parallelizing models and when handling different bactch
 dimensions.
 
 ## Installation<a id="installation"></a>
-[mlax] is written in pure Python. You can install [mlax] using `pip`.
+[mlax] is on PyPi. You can install [mlax] using `pip`.
 
 ```pip install mlax-nn```
 
-You can also install from source. First clone the repository:
-
-```git clone https://github.com/zongyf02/mlax.git```
-
-Move into the cloned repository, then build a Python wheel.
-
-```python3 setup.py bdist_wheel```
-
-Finally, install the wheel locally.
-
-```pip install -e mlax-nn```
+Note that this also installs the cpu version of JAX on your machine. If you need
+GPU acceleration, follow JAX's [installation guide](https://github.com/google/jax#installation).
 
 ## Quickstart<a id="quickstart"></a>
 Before you start, I recommend going through JAX's
