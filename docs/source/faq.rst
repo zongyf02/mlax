@@ -13,7 +13,7 @@ Are there examples using mlax?
 ------------------------------
 Yes! `Here on GitHub <https://github.com/zongyf02/mlax/tree/main/examples>`_.
 
-Why should I use this instead of <Your Favorite ML Library>?
+Why should I use mlax instead of <Your Favorite ML Library>?
 ------------------------------------------------------------
 mlax gives unparalled flexibility in developing your models! You can manage
 where every single variable is stored; you can dictate how data move between
@@ -29,7 +29,7 @@ great for research and prototyping.
 How to manage where variables are stored and how data flows in my model?
 ------------------------------------------------------------------------
 First, read up on JAX's
-`Controlling data and computation placement on devices (https://jax.readthedocs.io/en/latest/faq.html#controlling-data-and-computation-placement-on-devices)`_.
+`Controlling data and computation placement on devices <https://jax.readthedocs.io/en/latest/faq.html#controlling-data-and-computation-placement-on-devices>`_.
 
 Since mlax is built with JAX, those apply to mlax model weights and optimizer
 states. In short, by default, all variables are on the default devices, usually
@@ -57,18 +57,20 @@ In my quick benchmark on Google Colab's TPU environment, initializing two 4096
 by 4096 ``float32`` JAX arrays on TPU0 and TPU1 was significantly faster than
 initializing two identical numpy arrays then transferring them to TPU0 and TPU1.
 
-.. figure:: jax_array_allocation_benchmark.jpg
+.. figure:: images/jax_array_allocation_benchmark.jpg
+
     JAX arrays, which get directly allocated on accelerators, only needed 5ms.
 
-.. figure:: numpy_array_allocation_benchmark.jpg
+.. figure:: images/numpy_array_allocation_benchmark.jpg
+
     Numpy arrays, which get initialized on the CPU before being transferred
     to the accelerators, took more than 400ms. Allocating the arrays on numpy
     alone took longer than allocating them on accelerators. Transferring the
     numpy arrays to accelerators took longer than directly allocating JAX arrays
     on accelerators as well.
-
+    
 If you wish for model weights and optimizer states to be allocated to the CPU
-directly, use the `jax.default_device <https://jax.readthedocs.io/en/latest/_autosummary/jax.default_device.html>`_autosummary
+directly, use the `jax.default_device <https://jax.readthedocs.io/en/latest/_autosummary/jax.default_device.html>`_
 context manager.
 
 You are recommending the use of Optax's loss functions, but why not their optimizers?

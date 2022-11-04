@@ -11,6 +11,7 @@ Welcome to mlax's documentation!
    :caption: Contents:
 
    overview
+   faq
    apidocs/modules 
 
 
