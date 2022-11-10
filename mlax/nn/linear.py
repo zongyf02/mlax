@@ -1,5 +1,7 @@
-from jax import nn
-from jax import lax
+from jax import (
+    nn,
+    lax
+)
 
 def init(
     key,

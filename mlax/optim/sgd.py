@@ -1,5 +1,7 @@
-from jax import lax
-from jax import tree_util
+from jax import (
+    lax,
+    tree_util
+)
 from typing import NamedTuple, Any
 
 class State(NamedTuple):
