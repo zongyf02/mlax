@@ -2,8 +2,10 @@ from mlax.optim import (
     sgd
 )
 
-from jax import tree_util
-from jax import lax
+from jax import (
+    lax,
+    tree_util
+)
 
 def apply_updates(
     update_gradients,

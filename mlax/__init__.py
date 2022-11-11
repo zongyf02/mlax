@@ -1,3 +1,5 @@
-import mlax.nn
-import mlax.blocks
-import mlax.optim
+from mlax import (
+    nn,
+    optim,
+    blocks
+)
