@@ -1,26 +1,31 @@
 from mlax.nn import bias
-import jax
+import jax.numpy as jnp
+from jax import (
+    nn,
+    lax,
+    random
+)
 
-inputs = jax.numpy.zeros((4, 3), dtype="bfloat16")
-
+shape = (4, 3)
+inputs = jnp.zeros(shape, dtype="bfloat16")
 weights = bias.init(
-    jax.random.PRNGKey(0),
-    (4, 3),
-    bias_initializer=jax.nn.initializers.constant(1, dtype="float64"),
+    random.PRNGKey(0),
+    shape,
+    bias_initializer= nn.initializers.constant(1, dtype="float64"),
     dtype = "bfloat16" # Should override kernel initializer's dtype
 )
 
 def test_init():
-    assert jax.lax.eq(
+    assert lax.eq(
         weights,
-        jax.numpy.ones((4, 3), dtype="bfloat16")
+        jnp.ones(shape, dtype="bfloat16")
     ).all()
 
 def test_fwd():
     activations = bias.fwd(
         inputs, weights
     )
-    assert jax.lax.eq(
-        weights,
-        jax.numpy.ones((4,3), dtype="bfloat16")
+    assert lax.eq(
+        activations,
+        jnp.ones(shape, dtype="bfloat16")
     ).all()
