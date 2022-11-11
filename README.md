@@ -18,16 +18,10 @@ Pure functional programs are easy to optimize and parallelize. [JAX] relies on
 functional programming do optimize Python functions with `jit` and parallelize
 transformations with `pmap`.
 
-## Why use [mlax] over [flax] or [haiku]?
-[flax] and [haiku] are also excellent ML libraries built on top of [JAX]. They
-are maintained respectively by Google and DeepMind. They use a module-based
-programming model, which should be familiar to anyone coming from [Tensorflow] 
-or [Pytorch].
-
-On the other hand, [mlax] favors function-based programming. Models are simply
-compositions of pure functions, which allows [mlax] to be used with [JAX]
-without any caveats. Thanks to [JAX]'s `vmap` and `pmap`, model-parallelism
-is easy and intuitive with [mlax].
+## Why use [mlax]?
+In [mlax], models are simply compositions of pure functions. This allows [mlax]
+to be used with [JAX] transformations, such as `vmap`, `pmap`, `jit`, and
+`grad`, without any caveats.
 
 [mlax] also offers strong dtype guarantees. Unless explicitly overriden, [mlax]
 functions takes in inputs of the same dtype, perform all internal operations in

@@ -9,7 +9,7 @@ Is there a quickstart guide?
 ----------------------------
 Yes! Please visit the `quick start <https://github.com/zongyf02/mlax#quickstart>`_.
 
-Are there examples using mlax?
+Are there any code examples?
 ------------------------------
 Yes! `Here on GitHub <https://github.com/zongyf02/mlax/tree/main/examples>`_.
 
