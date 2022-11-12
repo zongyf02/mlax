@@ -16,8 +16,8 @@ The ``mlax.blocks.Linear`` block, for example, combines ``mlax.nn.linear``,
 
 * ``init`` takes in hyperparameters and returns some weights that are always
     instances of ``NamedTuple``, which is a `pytree <https://jax.readthedocs.io/en/latest/pytrees.html>`_.
-* ``fwd`` takes in unbatched inputs, compatible weights from ``init``, and
-    returns final activations.
+* ``fwd`` takes in inputs compatible weights from ``init``, and returns final
+    activations.
 
 .. warning::
     ``mlax.blocks`` modules' inputs and weights must be of the same dtype. All
@@ -27,8 +27,3 @@ The ``mlax.blocks.Linear`` block, for example, combines ``mlax.nn.linear``,
     If you want a block with custom behavior, such as a fully connected layer
     that multiplies in ``bfloat16`` but accumulates and applies bias in
     ``float32``, build a custom block from atomic transformations.
-
-.. warning::
-    Like all mlax functions, ``fwd`` assumes its input to be a single unbatched
-    sample. Use ``jax.vmap`` to get a vectorized version of ``fwd`` that
-    operates on batched inputs.

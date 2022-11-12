@@ -18,16 +18,10 @@ Pure functional programs are easy to optimize and parallelize. [JAX] relies on
 functional programming do optimize Python functions with `jit` and parallelize
 transformations with `pmap`.
 
-## Why use [mlax] over [flax] or [haiku]?
-[flax] and [haiku] are also excellent ML libraries built on top of [JAX]. They
-are maintained respectively by Google and DeepMind. They use a module-based
-programming model, which should be familiar to anyone coming from [Tensorflow] 
-or [Pytorch].
-
-On the other hand, [mlax] favors function-based programming. Models are simply
-compositions of pure functions, which allows [mlax] to be used with [JAX]
-without any caveats. Thanks to [JAX]'s `vmap` and `pmap`, model-parallelism
-is easy and intuitive with [mlax].
+## Why use [mlax]?
+In [mlax], models are simply compositions of pure functions. This allows [mlax]
+to be used with [JAX] transformations, such as `vmap`, `pmap`, `jit`, and
+`grad`, without any caveats.
 
 [mlax] also offers strong dtype guarantees. Unless explicitly overriden, [mlax]
 functions takes in inputs of the same dtype, perform all internal operations in
@@ -61,8 +55,6 @@ Before you start, I recommend going through JAX's
 [quickstart guide](https://jax.readthedocs.io/en/latest/notebooks/quickstart.html),
 and the [worked example on stateful computations](https://jax.readthedocs.io/en/latest/jax-101/07-state.html#simple-worked-example-linear-regression).
 
-mlax relies on Optax to update its weights, read its [Quick Start](https://optax.readthedocs.io/en/latest/optax-101.html) as well.
-
 Then take a look at mlax's [API Overview](https://mlax.readthedocs.io/en/latest/overview.html).
 
 Run some [examples](https://github.com/zongyf02/mlax/tree/main/examples) with
@@ -80,8 +72,5 @@ y22zong@uwaterloo.ca.
 
 [mlax]: https://github.com/zongyf02/mlax
 [JAX]: https://github.com/google/jax
-[flax]: https://github.com/google/flax
-[haiku]: https://github.com/deepmind/dm-haiku
 [Tensorflow]: https://www.tensorflow.org/
 [Pytorch]: https://pytorch.org/
-
