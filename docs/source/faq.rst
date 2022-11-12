@@ -13,7 +13,7 @@ Are there any code examples?
 ------------------------------
 Yes! `Here on GitHub <https://github.com/zongyf02/mlax/tree/main/examples>`_.
 
-Why should I use mlax instead of <Your Favorite ML Library>?
+Why use mlax?
 ------------------------------------------------------------
 mlax gives unparalled flexibility in developing your models! You can manage
 where every single variable is stored; you can dictate how data move between
@@ -82,8 +82,8 @@ Unlike Optax's loss functions, I feel I can meaningfully improve on Optax's
 optimizers. Optimizers are complex operations; so having mlax's dtype
 guarantee is important for convergence. Also, Optax does not offer guarantees
 for its optimizer states' structure, which is important if you wish to partition
-optimizer states across devices. Finally, Optax's optimizers cannot be jit
-compiled with using the
+optimizer states across devices. Finally, Optax's optimizers cannot be passed to
+jit compiled functions with using the
 `jax.tree_util.Partial <https://jax.readthedocs.io/en/latest/_autosummary/jax.tree_util.Partial.html>`_
 trick, which means using Optax's optimizers per Optax's examples leads to lower
 performance than what you get with mlax's optimizers.
