@@ -7,6 +7,9 @@ def fwd(x, key, prob, train=True):
     """Apply random dropouts to input features. Randomly sets some elements of
     the input features to 0.
 
+    .. note:
+        Dropouts are different even in a same batch.
+
     :param x: Input features to the dropout transform.
     :param key: PRNG key for randomizing dropouts.
     :param prob: Probability at which each element is dropped. Must be of a
@@ -16,6 +19,7 @@ def fwd(x, key, prob, train=True):
 
     :returns y: x with dropouts applied (sparsified).
     """
+
     if train:
         mask = random.bernoulli(key, prob, x.shape)
         zeros = lax.full_like(x, 0)

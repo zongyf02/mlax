@@ -7,7 +7,7 @@ from jax import (
 )
 
 
-inputs = jnp.ones((4,), dtype="bfloat16")
+inputs = jnp.ones((2, 4), dtype="bfloat16")
 weights = linear.init(
     random.PRNGKey(0),
     in_features=4, out_features=3,
@@ -28,5 +28,5 @@ def test_fwd():
     )
     assert lax.eq(
         activations,
-        jnp.full((3,), 4, dtype="float32")
+        jnp.full((2, 3), 4, dtype="float32")
     ).all()

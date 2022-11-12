@@ -22,17 +22,12 @@ initialize.
 
 * ``init`` takes in hyperparameters and returns some weights that are always 
     arrays or tuples of arrays, which are `pytrees <https://jax.readthedocs.io/en/latest/pytrees.html>`_.
-* ``fwd`` takes in unbatched inputs, compatible weights from ``init``, and
-    performs a forward pass, returning the activations.
+* ``fwd`` takes in inputs compatible weights from ``init``, and performs a
+    forward pass, returning the activations.
 
 .. warning::
     Because mlax does not promote dtypes implicitly, inputs and weights must be
     of the same dtype. The returned activations will also be of that dtype.
-
-.. warning::
-    Like all mlax functions, ``fwd`` assumes its input to be a single unbatched
-    sample. Use ``jax.vmap`` to get a vectorized version of ``fwd`` that
-    operates on batched inputs.
 
 While atomic transformations are great for fine-grained control, it can be
 inconvenient if you use them exclusively to build your neural network. For

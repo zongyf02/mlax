@@ -6,26 +6,52 @@ from jax import (
     random
 )
 
-shape = (4, 3)
-inputs = jnp.zeros(shape, dtype="bfloat16")
-weights = bias.init(
-    random.PRNGKey(0),
-    shape,
+key1, key2 = random.split(random.PRNGKey(0))
+
+shape1 = (2, 4, 3)
+type1 = "bfloat16"
+inputs1 = jnp.zeros(shape1, dtype=type1)
+weights1 = bias.init(
+    key1,
+    shape1[1:],
     bias_initializer= nn.initializers.constant(1, dtype="float64"),
-    dtype = "bfloat16" # Should override kernel initializer's dtype
+    dtype = type1 # Should override bias initializer's dtype
+)
+
+shape2 = (7, 9)
+type2 = "float16"
+inputs2 = jnp.zeros(shape2, dtype=type2)
+weights2 = bias.init(
+    key2,
+    shape2,
+    bias_initializer= nn.initializers.constant(1, dtype="float32"),
+    dtype = type2 # Should override bias initializer's dtype
 )
 
 def test_init():
     assert lax.eq(
-        weights,
-        jnp.ones(shape, dtype="bfloat16")
+        weights1,
+        jnp.ones(shape1[1:], dtype=type1)
+    ).all()
+    
+    assert lax.eq(
+        weights2,
+        jnp.ones(shape2, dtype=type2)
     ).all()
 
 def test_fwd():
     activations = bias.fwd(
-        inputs, weights
+        inputs1, weights1
     )
     assert lax.eq(
         activations,
-        jnp.ones(shape, dtype="bfloat16")
+        jnp.ones(shape1, dtype=type1)
+    ).all()
+
+    activations = bias.fwd(
+        inputs2, weights2
+    )
+    assert lax.eq(
+        activations,
+        jnp.ones(shape2, dtype=type2)
     ).all()

@@ -34,7 +34,7 @@ def fwd(
     """Apply linear transformation (without bias) to input features.
 
     :param x: Input features to the linear transform. Must be of the shape
-        ``(num_in_features,)``.
+        ``num_in_features`` or (n_batches, ``num_in_features``).
     :param weights: Initialized kernel weight for a linear transform.
     :param precision: See ``precision`` parameter of
         ``jax.lax.dot <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.dot.html#jax.lax.dot>``.

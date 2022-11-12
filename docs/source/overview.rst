@@ -40,29 +40,11 @@ notably:
 * `jit <https://jax.readthedocs.io/en/latest/notebooks/quickstart.html#using-jit-to-speed-up-functions>`_
 
 In other words, you get the auto-differentation, auto-vectorization,
-parallelization, and jit-compile capabilities of JAX for free. As you will see,
-mlax relies on some of thos transformations to properly function.
+parallelization, and jit-compile capabilities of JAX for free.
 
 .. note::
     mlax functions are JAX functions; they can be composed with each other
     without issues.
-
-mlax functions are designed to operate on single unbatched samples. Consider
-``mlax.nn.linear.bias`` as an exmaple, this function takes in an input ``x`` and 
-a bias ``weights``, and returns the element-wise sum of ``x`` plus ``weights``.
-This function is only defined when the shape of ``x`` matches that of
-``weights``. If ``x`` has an extra batch dimension, the function will result in
-a runtime error.
-
-This is to provide maximum flexibility when vectorizing and parallelizing
-operations. For example, parallel (grouped) convolutions can be easily achieved
-using ``vmap`` in conjunctin with ``pmap`` on the ``mlax.nn.conv2d`` operation.
-It does not require an implementation seperate from normal convolutions.
-
-.. warning::
-    Unless explicitly stated, mlax functions do not operate on batched data nor
-    batched weights. Use JAX's ``vmap`` and ``pmap`` transformations to obtain
-    batched versions of mlax functions.
 
 mlax contains four subpackages:
 

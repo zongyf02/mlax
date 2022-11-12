@@ -47,8 +47,9 @@ def fwd(
 ):
     """Apply linear transformation with bias to input features.
 
-    :param x: Input features to the Linear block. Must be of the shape
-        ``(num_in_features,)`` and of the same type as elements of ``weights``.
+    :param x: Input features to the Linear block. Must be of the shape of
+        ``num_in_features`` or (n_batches, ``num_in_features``) and of the same
+        type as elements of ``weights``.
     :param weights: Initialized weights for a Linear block.
     :param activation_fn: Activation functions of the signature ``Array -> Array``. See
         `jax.nn <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.dot.html#jax.lax.dot>`_.

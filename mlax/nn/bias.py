@@ -26,9 +26,12 @@ def fwd(x, weights):
     """Add bias to input features.
 
     :param x: Input features to the bias transform. Must be of the same shape as
-        ``weights``.
+        ``weights`` or (n_batches, ``weights``).
     :param weights: Initialized bias weight for a bias transform.
 
     :returns y: ``x`` plus bias weight.
     """
-    return lax.add(x, weights)
+    if x.shape[1:] == weights.shape:
+        return lax.add(x, lax.broadcast(weights, (x.shape[0],)))
+    else:
+        return lax.add(x, weights)
