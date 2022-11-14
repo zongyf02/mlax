@@ -12,14 +12,6 @@ mlax.nn.bias module
    :undoc-members:
    :show-inheritance:
 
-mlax.nn.dropout module
-----------------------
-
-.. automodule:: mlax.nn.dropout
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 mlax.nn.linear module
 ---------------------
 

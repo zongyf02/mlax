@@ -10,20 +10,25 @@ linear transformation and random dropouts, respectively.
     without issues.
 
 .. note::
-    The modules under ``mlax.nn`` and the functions under ``jax.nn`` are hereby
+    The modules and functions under ``mlax.nn`` and ``jax.nn`` are hereby
     referred to as **atomic transformations**. This is because they carry out
     computations that cannot be decomposed into smaller operations (without
     losing their meaning in a neural network context).
 
-Modules under ``mlax.nn`` can be stateful or statelsss. Stateful modules have
-two functions, ``init`` to intialize the module state, and ``fwd`` to carry out
-the computation. Stateless modules only have ``fwd`` as they have no weights to
-initialize.
+``mlax.nn`` contains both stateful or statelsss computations. Stateful
+operations are modules with two functions, ``init`` to intialize the module
+state, and ``fwd`` to carry out the computation. Stateless computations are
+simple functions as they have no weights to initialize.
+
+For stateful modules:
 
 * ``init`` takes in hyperparameters and returns some weights that are always 
     arrays or tuples of arrays, which are `pytrees <https://jax.readthedocs.io/en/latest/pytrees.html>`_.
 * ``fwd`` takes in inputs compatible weights from ``init``, and performs a
     forward pass, returning the activations.
+
+Stateless functions takes in inputs and performs a forward pass, returning the
+activations.
 
 .. warning::
     Because mlax does not promote dtypes implicitly, inputs and weights must be
