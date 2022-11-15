@@ -1,6 +1,7 @@
 from mlax.nn import (
     bias,
-    linear
+    linear,
+    conv
 )
 
 from jax import (
