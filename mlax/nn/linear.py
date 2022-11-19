@@ -8,7 +8,7 @@ def init(
     in_features, 
     out_features,
     kernel_initializer=nn.initializers.glorot_uniform(),
-    dtype="float32"
+    dtype=None
 ):
     """Intialize weights for a linear transform.
 
@@ -18,10 +18,11 @@ def init(
     :param kernel_initializer: Initializer as defined by
         ``jax.nn.initalizers <https://jax.readthedocs.io/en/latest/jax.nn.initializers.html>``.
         Default:: glorot uniform.
-    :param dtype: Type of initialized weights. Default: float32.
+    :param dtype: Type of initialized weights. Default: None, which is the
+        ``kernel_initializer``'s default.
 
     :returns weight: Initialized kernel weight of shape
-        ``(in_feautres, out_features)``.
+        ``(in_features, out_features)``.
     """
     return kernel_initializer(key, (in_features, out_features), dtype)
 
@@ -34,7 +35,7 @@ def fwd(
     """Apply linear transformation (without bias) to input features.
 
     :param x: Input features to the linear transform. Must be of the shape
-        ``num_in_features`` or (n_batches, ``num_in_features``).
+        ``(n_batches, in_features)``.
     :param weights: Initialized kernel weight for a linear transform.
     :param precision: See ``precision`` parameter of
         ``jax.lax.dot <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.dot.html#jax.lax.dot>``.
@@ -43,6 +44,12 @@ def fwd(
         ``jax.lax.dot <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.dot.html#jax.lax.dot>``.
         Default None.
 
-    :returns y: ``x`` dot kernel weight.
+    :returns y: ``x`` dot ``weights``.
     """
-    return lax.dot(x, weights, precision, preferred_element_type)
+    return lax.dot_general(
+        x,
+        weights,
+        (((1,), (0,)), ((), ())),
+        precision,
+        preferred_element_type
+    )

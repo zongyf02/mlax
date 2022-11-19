@@ -14,7 +14,7 @@ def init(
     out_features,
     kernel_initializer=nn.initializers.glorot_uniform(),
     bias_initializer=nn.initializers.zeros,
-    dtype="float32"
+    dtype=None
 ) -> Weights:
     """Intialize weights for a Linear block.
 
@@ -27,7 +27,8 @@ def init(
     :param bias_initializer: Initializer as defined by
         `jax.nn.initalizers <https://jax.readthedocs.io/en/latest/jax.nn.initializers.html>`_.
         Default:: zeros.
-    :param dtype: Type of the weights. Default: float32.
+    :param dtype: Type of initialized weights. Default: None, which is the
+        initializers' default.
 
     :returns weights: Initialized Weights.
     """

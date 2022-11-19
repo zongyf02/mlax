@@ -12,6 +12,14 @@ mlax.nn.bias module
    :undoc-members:
    :show-inheritance:
 
+mlax.nn.conv module
+-------------------
+
+.. automodule:: mlax.nn.conv
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 mlax.nn.linear module
 ---------------------
 

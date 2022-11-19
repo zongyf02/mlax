@@ -6,23 +6,24 @@ from jax import (
     nn
 )
 
-inputs = jnp.ones((3, 4), dtype="bfloat16")
+in_type = jnp.float16
+inputs = jnp.ones((3, 4), dtype=in_type)
 weights = Linear.init(
     random.PRNGKey(0),
     in_features=4, out_features=3,
-    kernel_initializer=nn.initializers.constant(1, dtype="float64"),
+    kernel_initializer=nn.initializers.constant(1, dtype=jnp.float32),
     bias_initializer=nn.initializers.ones,
-    dtype="bfloat16" # Should override kernel initializer's dtype
+    dtype=in_type # Should override kernel initializer's dtype
 )
 
 def test_init():
     assert lax.eq(
         weights.kernel,
-        jnp.ones((4, 3), dtype="bfloat16")
+        jnp.ones((4, 3), dtype=in_type)
     ).all()
     assert lax.eq(
         weights.bias,
-        jnp.ones((3,), dtype="bfloat16")
+        jnp.ones((3,), dtype=in_type)
     ).all()
 
 def test_fwd():
@@ -31,5 +32,5 @@ def test_fwd():
     )
     assert lax.eq(
         activations,
-        jnp.full((3, 3), 5, dtype="bfloat16")
+        jnp.full((3, 3), 5, dtype=in_type)
     ).all()
