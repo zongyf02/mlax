@@ -9,10 +9,10 @@ def init(
     in_channels,
     out_channels,
     filter_shape,
-    kernel_initializer=nn.initializers.glorot_uniform(),
+    kernel_initializer=nn.initializers.glorot_uniform(in_axis=1, out_axis=0),
     dtype=None
 ):
-    """Intialize weights for a convolutional transform.
+    """Intialize weights for a channel-first convolutional transform.
 
     :param key: PRNG key for weight initialization.
     :param in_channels: Number of input feature dimensions/channels.
@@ -21,7 +21,7 @@ def init(
         the spatial dimension.
     :param kernel_initializer: Initializer as defined by
         ``jax.nn.initalizers <https://jax.readthedocs.io/en/latest/jax.nn.initializers.html>``.
-        Default:: glorot uniform with the input axis at 1 and output axis at 0.
+        Default:: glorot uniform.
     :param dtype: Type of initialized weights. Default: None, which is the
         ``kernel_initializer``'s default. 
 
@@ -31,11 +31,9 @@ def init(
         not ``filter_shape = 3``.
 
     :returns weight: Initialized kernel weight of shape
-        ``filter_shape + (in_channels, out_channels)``.
+        ``(out_channels, in_channels) +  filter_shape``.
     """
-    kernel_shape = None
-    kernel_shape = filter_shape + (in_channels, out_channels)
-  
+    kernel_shape = (out_channels, in_channels) + filter_shape
     return kernel_initializer(
         key,
         kernel_shape,
@@ -51,16 +49,15 @@ def fwd(
     filter_dilation=None,
     feature_group_count=1,
     batch_group_count=1,
-    channel_first=False,
     precision=None,
     preferred_element_type=None
 ):
-    """Applies convolutions on input features.
+    """Applies convolutions on channel-last input features.
 
-    :param x: Input features to the convolutional transform. Must be compatible
-        with the ``lhr_spec`` of ``dimension_numbers``.
-    :param weights: Initialized kernel weights for a convolutional transform.
-        Must be compatible with the ``rhs_spec`` of ``dimension_numbers``.
+    :param x: Input features to the convolutional transform. Must be
+        channel-first.
+    :param weights: Initialized kernel weights for a channel-first convolutional
+        transform.
     :param strides: See the ``strides`` parameter of
         `jax.lax.conv_general_dilated`_.
     :param padding: See the ``padding`` parameter of
@@ -78,8 +75,6 @@ def fwd(
         convolutions. Default: 1.
     :param batch_group_count: See the ``batch_group_count`` parameter of
         `jax.lax.conv_general_dilated`_. Default: 1.
-    :param channel_first: Whether features are channel-first or channel-last.
-        Default: False, channel-last.
     :param precision: See the ``precision`` parameter of
         `jax.lax.conv_general_dilated`_. Default: None.
     :param preferred_element_type: See the ``preferred_element_type`` parameter
@@ -88,17 +83,12 @@ def fwd(
     .. _jax.lax.conv_general_dilated:
         https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv_general_dilated.html#jax.lax.conv_general_dilated
     
-    :returns y: Convolution on input features compatible with the ``out_spec``
-        of ``dimension_numbers``.
+    :returns y: Convolution on channel-first input features.
     """
     dims = len(x.shape) - 2
-    feature_spec = reduce(lambda s, i: s + str(i), range(dims), "")
-    if channel_first:
-        lhs_spec = "NC" + feature_spec
-        rhs_spec = feature_spec + "IO"
-    else:
-        lhs_spec = "N" + feature_spec + "C"
-        rhs_spec = feature_spec + "IO"
+    feature_spec = reduce(lambda s, i: s + str(i), range(1, dims), "0")
+    lhs_spec = "NC" + feature_spec
+    rhs_spec = "OI" + feature_spec
     dimension_numbers = (lhs_spec, rhs_spec, lhs_spec)
     
     return lax.conv_general_dilated(
