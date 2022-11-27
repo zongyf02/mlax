@@ -5,7 +5,7 @@ with open("README.md", "r") as file:
 
 setup(
     name="mlax_nn",
-    version="0.0.3",
+    version="0.1.0",
     description="A pure functional machine learning library build on top of Google JAX.",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -25,8 +25,8 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules"
     ],
     install_requires = [
-        "jax>=0.3.23",
-        "jaxlib>=0.3.22"
+        "jax>=0.3.25",
+        "jaxlib>=0.3.25"
     ],
     extras_require = {
         "dev" : [
