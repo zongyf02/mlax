@@ -1,7 +1,7 @@
 # [mlax]: Pure functional ML library built on top of Google [JAX]
 
 [**Overview**](#overview)
-| [**Intallation**](#installation)
+| [**Installation**](#installation)
 | [**Quickstart**](#quickstart)
 | [**Examples**](https://github.com/zongyf02/mlax/tree/main/examples)
 | [**Documentation**](https://mlax.readthedocs.io/en/latest/)

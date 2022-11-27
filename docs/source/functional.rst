@@ -3,7 +3,7 @@
 
 The ``mlax.functional`` module contains stateless JAX functions. Examples
 include ``mlax.functional.max_pool`` and ``mlax.functional.dropout``, which
-applies max-pooling and random droputs to input features respectively.
+apply max-pooling and random dropouts to input features respectively.
 
 They complement the common neural network functions under ``jax.nn``.
 
