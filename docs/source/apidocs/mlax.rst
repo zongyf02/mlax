@@ -7,10 +7,19 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   mlax.blocks
-   mlax.experimental
+   mlax.block
    mlax.nn
-   mlax.optim
+
+Submodules
+----------
+
+mlax.functional module
+----------------------
+
+.. automodule:: mlax.functional
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Module contents
 ---------------

@@ -4,26 +4,42 @@ mlax.nn package
 Submodules
 ----------
 
-mlax.nn.bias module
+mlax.nn.Bias module
 -------------------
 
-.. automodule:: mlax.nn.bias
+.. automodule:: mlax.nn.Bias
    :members:
    :undoc-members:
    :show-inheritance:
 
-mlax.nn.dropout module
-----------------------
+mlax.nn.Conv module
+-------------------
 
-.. automodule:: mlax.nn.dropout
+.. automodule:: mlax.nn.Conv
    :members:
    :undoc-members:
    :show-inheritance:
 
-mlax.nn.linear module
+mlax.nn.F module
+----------------
+
+.. automodule:: mlax.nn.F
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+mlax.nn.F\_rng module
 ---------------------
 
-.. automodule:: mlax.nn.linear
+.. automodule:: mlax.nn.F_rng
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+mlax.nn.Linear module
+---------------------
+
+.. automodule:: mlax.nn.Linear
    :members:
    :undoc-members:
    :show-inheritance:

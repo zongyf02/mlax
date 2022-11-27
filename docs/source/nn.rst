@@ -1,34 +1,28 @@
 ``mlax.nn`` 
 ===========
 
-The ``mlax.nn`` package contains fundamental operations of a neural network.
-Examples include ``mlax.nn.linear`` and ``mlax.nn.dropout``, which applies a
-linear transformation and random dropouts, respectively.
+The ``mlax.nn`` package contains neural network layers. Examples include
+``mlax.nn.Linear`` and ``mlax.nn.Conv``, which applies a linear transformation
+and convolutions respectively.
 
-.. note::
-    ``mlax.nn`` is fully compatible with ``jax.nn`` and can be used together
-    without issues.
+Modules under ``mlax.nn`` each has two functions:
 
-.. note::
-    The modules under ``mlax.nn`` and the functions under ``jax.nn`` are hereby
-    referred to as **atomic transformations**. This is because they carry out
-    computations that cannot be decomposed into smaller operations (without
-    losing their meaning in a neural network context).
-
-Modules under ``mlax.nn`` can be stateful or statelsss. Stateful modules have
-two functions, ``init`` to intialize the module state, and ``fwd`` to carry out
-the computation. Stateless modules only have ``fwd`` as they have no weights to
-initialize.
-
-* ``init`` takes in hyperparameters and returns some weights that are always 
-    arrays or tuples of arrays, which are `pytrees <https://jax.readthedocs.io/en/latest/pytrees.html>`_.
-* ``fwd`` takes in inputs compatible weights from ``init``, and performs a
-    forward pass, returning the activations.
+* ``init`` initializes layer parameters. It returns trainable and non-trainable
+    weights, which are two seperate `pytrees <https://jax.readthedocs.io/en/latest/pytrees.html>`_
+    of JAX arrays. It also returns some hyperparameters, which should be a
+    NamedTuple of hashable Python types.
+* ``fwd`` takes in batched inputs compatible with the weights and
+    hyperparameters from ``init``, and performs a forward pass, returning the
+    activations and new non-trainable weights.
 
 .. warning::
-    Because mlax does not promote dtypes implicitly, inputs and weights must be
-    of the same dtype. The returned activations will also be of that dtype.
+    Because mlax does not promote dtypes implicitly, the inputs and initialized
+    weights to ``fwd`` must be of the same type. Unless explicitly overriden,
+    the returned activations will also be of that type.
 
-While atomic transformations are great for fine-grained control, it can be
-inconvenient if you use them exclusively to build your neural network. For
-higher level building blocks, check out ``mlax.blocks``.
+``mlax.nn`` also has two special modules: ``mlax.nn.F`` and ``mlax.nn.F_rng``.
+They are used to convert stateless functions, such as those from ``jax.nn`` and
+``mlax.functional``, into layers. ``mlax.nn.F`` is for functions that do not
+require a PRNG key, ``mlax.nn.F_rng`` for is those that do.
+
+Multiple layers can be combined using ``mlax.blocks``.

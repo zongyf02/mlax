@@ -1,6 +1,8 @@
 from mlax import nn 
 
 def test_import():
-    assert hasattr(nn, "linear")
-    assert hasattr(nn, "bias")
-    assert hasattr(nn, "dropout")
+    assert hasattr(nn, "Linear")
+    assert hasattr(nn, "Bias")
+    assert hasattr(nn, "Conv")
+    assert hasattr(nn, "F")
+    assert hasattr(nn, "F_rng")

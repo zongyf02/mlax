@@ -1,5 +1,7 @@
 from mlax.nn import (
-    bias,
-    dropout,
-    linear
+    Linear,
+    Bias,
+    Conv,
+    F,
+    F_rng
 )

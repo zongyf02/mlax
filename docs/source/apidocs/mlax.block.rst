@@ -1,13 +1,13 @@
-mlax.optim package
+mlax.block package
 ==================
 
 Submodules
 ----------
 
-mlax.optim.sgd module
----------------------
+mlax.block.Series module
+------------------------
 
-.. automodule:: mlax.optim.sgd
+.. automodule:: mlax.block.Series
    :members:
    :undoc-members:
    :show-inheritance:
@@ -15,7 +15,7 @@ mlax.optim.sgd module
 Module contents
 ---------------
 
-.. automodule:: mlax.optim
+.. automodule:: mlax.block
    :members:
    :undoc-members:
    :show-inheritance:
