@@ -2,57 +2,37 @@ API Overview
 ============
 
 `mlax <https://github.com/zongyf02/mlax>`_ is a pure functional ML library
-built on top Google `JAX <https://github.com/google/jax>`_. It is a pure Python
-package and is written solely in terms of JAX functions.
+built on top Google `JAX <https://github.com/google/jax>`_.
 
-In the this overview and docs, any ambiguous term should be interpreted in a
-JAX context. For example, ``array`` means ``jax.Array``, and ``dtype`` means JAX
-``dtype``.
-
-Unlike most ML libraries, mlax does not support implicit dtype conversions. This
-means you cannot, for example, pass ``float16`` inputs to a transformation with
-``float32`` weights without getting a runtime error.
-
-This is to avoid the ambiguity that comes with mixed-precision operations. Are
-the ``float16`` inputs implicitly converted to ``float32``? or are the
-``float32`` weights down-casted to ``float16``? The former follows conventional
-type promotion, but the latter is what we expect from mixed-precision in neural
-networks.
-
-On the upside, mlax offers strong dtype guarantees. Unless explicitly stated,
-all internal calculations of a function are carried out in the same dtype as its
-inputs, and the output will also be in that same dtype.
-
-.. warning::
-    mlax does not perform implicit dtype conversions. As a general rule, if a
-    function takes in two or more arrays (or pytrees of arrays) as inputs, they
-    must be of the same dtype (or same pytree structure with leaves of the same
-    dtype). All internal operations will be carried out in that dtype and the
-    returned values will be of that dtype (or same pytree structure with leaves
-    of teh same dtype).
-
-Since mlax is written in JAX, it is fully compatible with JAX transformations,
-notably:
+mlax functions are JAX functions. They are fully compatible with native JAX
+transformations, notably:
 
 * `grad <https://jax.readthedocs.io/en/latest/notebooks/quickstart.html#taking-derivatives-with-grad>`_,
 * `vmap <https://jax.readthedocs.io/en/latest/notebooks/quickstart.html#auto-vectorization-with-vmap>`_,
 * `pmap <https://jax.readthedocs.io/en/latest/jax-101/06-parallelism.html>`_, and
 * `jit <https://jax.readthedocs.io/en/latest/notebooks/quickstart.html#using-jit-to-speed-up-functions>`_
 
-In other words, you get the auto-differentation, auto-vectorization,
-parallelization, and jit-compile capabilities of JAX for free.
-
 .. note::
-    mlax functions are JAX functions; they can be composed with each other
-    without issues.
+    mlax is fully compatible with JAX. There are no new concepts to learn if you
+    already know JAX.
 
-mlax contains four subpackages:
+In mlax, layer weights, hyperparameters, and functions are decoupled. They are
+not stored together in an object but in seperate variables.
+
+Functions are imported from mlax. Trainable and non-trainable weights are JAX
+arrays stored in distinct PyTrees. Hyperparameters are NamedTuples containing
+hashable Python types (usually not valid JAX types).
+
+mlax does not promote types implicitly. This means, for example, passing
+`float16` inputs to a layer with `float32` weights will result in a runtime
+error. This is to avoid surprises in mixed-precision operations.
+
+mlax consists of 3 sub-packages and modules:
 
 .. toctree::
-   :maxdepth: 2
-   :caption: mlax 
+    :maxdepth: 2
+    :caption: mlax
 
-   nn
-   blocks
-   optim
-   experimental
+    functional
+    nn
+    block
