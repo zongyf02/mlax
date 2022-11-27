@@ -53,7 +53,7 @@ def series_rng_fwd(
     hyperparams: Tuple[Any],
     inference_mode: bool=False
 ):
-    """Apply a series of sub-transformations that may consumme a PRNG key.
+    """Apply a series of sub-transformations that may consume a PRNG key.
     
     .. note::
         ``series_fwd`` is usually faster than ``series_rng_fwd`` because the

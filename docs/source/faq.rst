@@ -1,13 +1,13 @@
-Freqently Asked Questions
-=========================
+Frequently Asked Questions
+==========================
 
-Layers' ``fwd`` function is throwing an error when jitted.
--------------------------------------------------------------
+Layers' ``fwd`` function is throwing an error when jit-compiled.
+----------------------------------------------------------------
 First ensure that ``jax.jit`` uses the argument ``static_args=["hyperparams"]``.
 ``hyperparams`` contains Python types, not valid JAX types. They can also be
-used for control-flow. They should be treated as compile-time constant.
+used for control-flow. They should be treated as compile-time constants.
 
-If the layers also has different behavior during inference and training, make
+If the layers also have different behavior during inference and training, make
 sure ``static_args=["hyperparams", "inference_mode"]``. ``inference_mode`` in
 such layers is used for control-flow, so should be treated as compile-time
 constant.
@@ -25,5 +25,5 @@ First, read up on JAX's
 Since mlax is built with JAX, those apply to mlax model weights. In short, by
 default, all variables are on the default devices, usually the first
 accelerator. You can use `jax.device_put` to control where you put your
-variables and explictly move data between devices. Also note `numpy` arrays
-are always on the CPU and is transferred to the accelerator when used.
+variables and explicitly move data between devices. Also note `numpy` arrays
+are always on the CPU and are transferred to the accelerator when used.

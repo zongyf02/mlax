@@ -8,7 +8,7 @@ def init(
     fn: Callable[[jax.Array, Any, bool], jax.Array]
 ) -> Tuple[None, None, Hyperparams]:
     """Initialize variables for an arbitrary pure functional transform that
-    consummes a PRNG key.
+    consumes a PRNG key.
     
     :params fn: Pure function that takes in an input JAX array, a PRNG key, and
         a boolean indicating whether in inference or training mode, and returns
@@ -28,7 +28,7 @@ def fwd(
     hyperparams: Hyperparams,
     inference_mode: bool=False
 ) -> jax.Array:
-    """Apply an arbitrary pure functional transform that consummes a PRNG key to 
+    """Apply an arbitrary pure functional transform that consumes a PRNG key to 
     input features.
 
     :param x: Input features.

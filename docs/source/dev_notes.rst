@@ -5,14 +5,42 @@ Planned features ranked by priority
 ------------------------------------
 Batchnorm, attention, recurrent layers.
 
-Why aren't trainable and non-trainble weights Numpy arrays?
+Is there a performance penalty for having unused function parameters?
+----------------------------------------------------------------------
+In eager mode, yes, albeit a small one.
+
+In a jit-compiled function, JAX is smart enough to drop unused arguments from
+XLA executables. ``jax.jit`` has a ``keep_unused`` parameter to control that.
+You can also verify this by
+`inspecting the lowered function <https://jax.readthedocs.io/en/latest/aot.html#inspecting-staged-out-computations>`_.
+
+However, if the unused parameters cannot be jit-compiled, and we list them under
+``jax.jit``'s ``static_argnames``, then the function will be retraced every time
+new arguments are passed into the function.
+
+In the case of the ``inference_mode`` parameter that every ``fwd`` function in
+``mlax.nn`` has, if it is not used by the forward function, then do not include
+it in ``static_argnames`` when jit-compiling to prevent unnecessary retracing.
+If it is used by the forward function, then you must include it in
+``static_argnames`` because it is used in control-flow. Ensure only ``True`` and
+``False`` is passed into that parameter (avoid ``None``) so that only up to two
+retracings are needed.
+
+When jit-compiling, JAX also ignores ``None`` arguments. You can verify this by
+using ``jax.make_jaxpr``.
+
+Therefore, many ``fwd`` functions' unused ``non_trainables`` parameters will not
+have a performance impact either, provided that you do not override default
+behavior by passing in something other than ``None``.
+
+Why aren't trainable and non-trainable weights Numpy arrays?
 ------------------------------------------------------------
 Doing that would store those variables on the CPU. This would be desirable when
 they do not fit on a single accelerator, as you could simply stream the model
 weights and optimizer states to the appropriate accelerator as needed.
 
 However, this comes with a performance penalty. CPU memory (RAM) tends to be
-slower than accelerator memory. Allocating memory directly on an accelerator
+slower than accelerator memory. Allocating memory directly to an accelerator
 would avoid the cost of unnecessary Host (CPU) to device (accelerator) memory
 transfers. Accelerators may also initialize variables faster from an instruction
 than from a memory copy. Finally, JAX performs
@@ -23,7 +51,8 @@ large arrays may block the execution of the program.
 
 In my quick benchmark on Google Colab's TPU environment, initializing two 4096
 by 4096 ``float32`` JAX arrays on TPU0 and TPU1 was significantly faster than
-initializing two identical numpy arrays then transferring them to TPU0 and TPU1.
+initializing two identical numpy arrays and then transferring them to TPU0 and
+TPU1.
 
 .. figure:: images/jax_array_allocation_benchmark.jpg
 
