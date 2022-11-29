@@ -19,13 +19,14 @@ class Hyperparams(NamedTuple):
 
 def init(
     key: Any,
+    ndims: int,
     in_channels: int,
     out_channels: int,
-    filter_shape: Sequence[int],
-    strides = 1,
+    filter_shape: Union[int, Sequence[int]],
+    strides: Union[int, Sequence[int]] = 1,
     padding = "VALID",
-    input_dilation = None,
-    filter_dilation = None,
+    input_dilation: Optional[Union[int, Sequence[int]]] = None,
+    filter_dilation: Optional[Union[int, Sequence[int]]] = None,
     feature_group_count = 1,
     batch_group_count = 1,
     conv_spec: Tuple[str, str, str] = None,
@@ -37,34 +38,35 @@ def init(
     """Intialize variables for a convolutional transform.
 
     :param key: PRNG key for weight initialization.
+    :param ndims: Number of input spatial dimensions.
     :param in_channels: Number of input feature dimensions/channels.
     :param out_channels: Number of desired output feature dimensions/channels.
-    :param filter_shape: Shape of filters used on input features. Used to infer
-        the spatial dimension.
-    :param strides: An integer or a sequence of integers of the same length as
-        ``filter_shape``, specifying the strides of the convolution along the
-        filter dimensions. A single integer specifies the same value for all
-        filter dimensions. Default: 1.
+    :param filter_shape: An integer or a sequence of ``ndims`` integers,
+        specifying the shape of the filters used on input features. A single
+        integer specifies the same value for all spatial dimensions.
+    :param strides: An integer or a sequence of ``ndims`` integers, specifying
+        the strides of the convolution along the spatial dimensions. A single
+        integer specifies the same value for all spatial dimensions. Default: 1.
     :param padding: See the ``padding`` parameter of
         `jax.lax.conv_general_dilated`_, which is used internally.
-    :param input_dilation: Dilation rate applied to the input features, also
-        known as transposed convolution dilation rate. See the ``lhs_dilation``
-        parameter of `jax.lax.conv_general_dilated`_. Default: None, no input
-        dilation.
-    :param filter_dilation: Dilation rate applied to each filter, also known as
-        atrous convolution dilation rate. See the ``rhs_dilation``
-        parameter of `jax.lax.conv_general_dilated`_. Default: None, no filter
-        dilation.
+    :param input_dilation: None, an integer, or a sequence of ``ndims``
+        integers, specifying the transposed convolution dilation rate in each
+        spatial dimension. See the ``lhs_dilation`` parameter of
+        `jax.lax.conv_general_dilated`_. Default: None, no input dilation.
+    :param filter_dilation: None, an integer, or a sequence of ``ndims``
+        integers, specifying the atrous convolution dilation rate. See the
+        ``rhs_dilation`` parameter of `jax.lax.conv_general_dilated`_. Default:
+        None, no filter dilation.
     :param feature_group_count: See the ``feature_group_count`` parameter of
         `jax.lax.conv_general_dilated`_. Can be used to perform group and
         seperable convolutions. Default: 1.
     :param batch_group_count: See the ``batch_group_count`` parameter of
         `jax.lax.conv_general_dilated`_. Default: 1.
     :param conv_spec: Optional 3-tuple ``(in_spec, kernel_spec, out_spec)``
-        specifying the input, kernel, and output layout. See the
-        ``dimension_numbers`` parameter of `jax.lax.conv_general_dilated`_.
-        Default: None, equivalent to a channel-first
-        ``("NC...", "OI...", "NC...")`` layout.
+        specifying the input, kernel, and output layout. The string specifying
+        each layout must be ``ndims`` in length. See the ``dimension_numbers``
+        parameter of `jax.lax.conv_general_dilated`_. Default: None, equivalent
+        to a channel-first ``("NC...", "OI...", "NC...")`` layout.
     :param precision: See the ``precision`` parameter of
         `jax.lax.conv_general_dilated`_. Default: None.
     :param accum_dtype: See the ``preferred_element_type`` parameter of
@@ -87,12 +89,16 @@ def init(
     .. _jax.lax.conv_general_dilated:
         https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv_general_dilated.html
     """
-    filter_shape_iter = iter(filter_shape)
-    kernel_shape = [
-        out_channels if c == "O" else
-        in_channels if c == "I" else
-        next(filter_shape_iter) for c in conv_spec[1]
-    ]
+    filter_shape = (filter_shape,) * ndims if isinstance(filter_shape, int) else filter_shape
+    if conv_spec is None:
+        kernel_shape = (out_channels, in_channels, *filter_shape)
+    else:
+        filter_shape_iter = iter(filter_shape)
+        kernel_shape = tuple(
+            out_channels if c == "O" else
+            in_channels if c == "I" else
+            next(filter_shape_iter) for c in conv_spec[1]
+        )
     kernel_weight = kernel_initializer(
         key,
         kernel_shape,
@@ -100,10 +106,10 @@ def init(
     )
     
     hyperparams = Hyperparams(
-        (strides,) * len(filter_shape) if isinstance(strides, int) else strides,
+        (strides,) * ndims if isinstance(strides, int) else strides,
         padding,
-        input_dilation,
-        filter_dilation,
+        (input_dilation,) * ndims if isinstance(input_dilation, int) else input_dilation,
+        (filter_dilation,) * ndims if isinstance(filter_dilation, int) else filter_dilation,
         feature_group_count,
         batch_group_count,
         conv_spec,

@@ -39,6 +39,11 @@ def init(
         ``(*out_feature_shape, *in_feature_shape)``.
     :returns non_trainables: None.
     :returns hyperparams: NamedTuple containing the hyperparameters.
+    
+    .. note:
+        If the ``in_feature_shape`` or ``out_feature_shape`` has more than one
+        dimensions, also override the default ``kernel_initializer`` with one
+        that has the correct ``in_axis`` and ``out_axis``.
     """
     kernel_weight = kernel_initializer(
         key,
