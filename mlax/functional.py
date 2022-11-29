@@ -52,10 +52,10 @@ def pool(
         window.
     :param reduce_fn: Reduce function.
     :param window_shape: Shape of the pooling window.
-    :param strides: An integer or sequence intergers of the same length as
+    :param strides: An integer or sequence integers of the same length as
         ``window_shape``, specifying the strides of the pooling window along the
         window shape. A single integer specifies the same value for all window
-        dimensions. Default: one.
+        dimensions. Default: 1.
     :param padding: See the ``padding`` parameter of
         `jax.lax.reduce_window`_, which is used internally.
     :param input_dilation: See the ``base_dilation`` parameter of
@@ -73,7 +73,7 @@ def pool(
         init_value,
         reduce_fn,
         window_shape,
-        (1,) * len(window_shape) if isinstance(strides, int) else strides,
+        (strides,) * len(window_shape) if isinstance(strides, int) else strides,
         padding,
         input_dilation,
         window_dilation
