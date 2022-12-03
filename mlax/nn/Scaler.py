@@ -13,42 +13,38 @@ class Hyperparams(NamedTuple):
 def init(
     key: Any,
     in_feature_shape: Sequence[int],
-    bias_dims: Sequence[int] = (0,),
+    scaler_dims: Sequence[int] = (0,),
     dtype=None,
-    bias_initializer=nn.initializers.zeros,
+    scaler_initializer=nn.initializers.ones,
     param_dtype=jax.numpy.float32
 ) -> Tuple[jax.Array, None, Hyperparams]:
-    """Intialize parameters and hyperparameters for a bias layer.
+    """Intialize parameters and hyperparametersfor a scaler layer.
 
     :param key: PRNG key for weight initialization.
     :param in_feature_shape: Shape of the input features.
-    :param bias_dims: Sequence indicating to which dimensions in the input
-        features to add bias. Default: (0,).
+    :param scaler_dims: Sequence indicating which dimensions in the input
+        features are scaled. Default: (0,).
     :param dtype: Type of computation. Default: None, inferred from
         ``param_dtype``.
-    :param bias_initializer: Initializer as defined by
+    :param scaler_initializer: Initializer as defined by
         ``jax.nn.initalizers <https://jax.readthedocs.io/en/latest/jax.nn.initializers.html>``.
-        Default:: zeros.
-    :param param_dtype: Type of initialized bias weight. Default: float32. 
+        Default:: ones.
+    :param param_dtype: Type of initialized bias weight. Default: float32.
 
-    :returns trainables: Initialized bias weight of shape
+    :returns trainables: Initialized scaler weight of shape
         ``tuple(in_feature_shape[dim] for dim in bias_dims)``.
     :returns non_trainables: None.
     :returns hyperparams: NamedTuple containing the hyperparamters.
     """
-    bias_weight = bias_initializer(
+    scaler_weight = scaler_initializer(
         key,
-        tuple(in_feature_shape[dim] for dim in bias_dims),
+        tuple(in_feature_shape[dim] for dim in scaler_dims),
         param_dtype
     )
 
-    return (
-        bias_weight,
-        None,
-        Hyperparams(
-            tuple(dim + 1 for dim in bias_dims),
-            _utils._canon_dtype(dtype, param_dtype)
-        )
+    return scaler_weight, None, Hyperparams(
+        tuple(dim + 1 for dim in scaler_dims),
+        _utils._canon_dtype(dtype, param_dtype)
     )
 
 def fwd(
@@ -58,21 +54,21 @@ def fwd(
     hyperparams: Hyperparams,
     inference_mode: bool=False
 ) -> jax.Array:
-    """Add bias to input features.
+    """Scale input features.
 
-    :param x: Input features to the bias layer. Must be of ``dtype`` and of the
-        shape ``(n_batches, *in_feature_shape)``.
-    :param trainables: Trainable weights for a bias layer.
-    :param non_trainables: Non-trainable weights for a bias layer, should
+    :param x: Input features to the scaler layer. Must be of ``dtype`` and of
+        the shape as ``(n_batches, *in_feature_shape)``.
+    :param trainables: Trainable weights for a scaler layer.
+    :param non_trainables: Non-trainable weights for a scaler layer, should
         be None. Ignored.
     :param hyperparams: NamedTuple containing the hyperparameters. 
     :param inference_mode: Whether in inference or training mode. Ignored.
         Default: False.
 
-    :returns y: ``x`` plus bias.
+    :returns y: Scaled ``x``.
     :returns non_trainables: None.
     """
-    return lax.add(
+    return lax.mul(
         x,
         lax.broadcast_in_dim(
             lax.convert_element_type(trainables, hyperparams.dtype), 

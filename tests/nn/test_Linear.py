@@ -7,21 +7,24 @@ from jax import (
     jit
 )
 
-in_dtype = jnp.bfloat16
-out_dtype = jnp.float32
-inputs = jnp.ones((2, 4), dtype=in_dtype)
+dtype = jnp.bfloat16
+param_dtype = jnp.float32
+inputs = jnp.ones((2, 4), dtype)
 trainables, non_trainables, hyperparams = Linear.init(
     random.PRNGKey(0),
-    in_feature_shape=(4,), out_feature_shape=(3,),
-    kernel_initializer=nn.initializers.constant(1, dtype=jnp.float64),
-    dtype=in_dtype, # Should override kernel initializer's dtype
-    accum_dtype=out_dtype
+    in_features=4, out_features=3,
+    precision=("float32", "float32"),
+    dtype=dtype,
+    accum_dtype=param_dtype,
+    transposed_kernel=True,
+    kernel_initializer=nn.initializers.constant(1, dtype),
+    param_dtype=param_dtype # Should override kernel initializer's dtype
 )
 
 def test_init():
     assert lax.eq(
         trainables,
-        jnp.ones((3, 4), dtype=in_dtype)
+        jnp.ones((3, 4), param_dtype)
     ).all()
     assert non_trainables is None
 
@@ -31,6 +34,6 @@ def test_fwd():
     )
     assert lax.eq(
         activations,
-        jnp.full((2, 3), 4, dtype=out_dtype)
+        jnp.full((2, 3), 4, param_dtype)
     ).all()
-    assert new_ntr == non_trainables
+    assert new_ntr is None 

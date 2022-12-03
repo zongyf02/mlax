@@ -4,55 +4,69 @@ from jax import (
     lax
 )
 from typing import Tuple, Sequence, Any, NamedTuple
+from mlax.nn import _utils 
 
 class Hyperparams(NamedTuple):
+    transposed_kernel: bool
+    dtype: Any
     precision: Any
     accum_dtype: Any
 
 def init(
     key: Any,
-    in_feature_shape: Sequence[int],
-    out_feature_shape: Sequence[int],
+    in_features: int,
+    out_features: int,
+    dtype=None,
     precision=None,
     accum_dtype=None,
-    kernel_initializer=nn.initializers.glorot_uniform(in_axis=-1, out_axis=0),
-    dtype=None
+    transposed_kernel=False,
+    kernel_initializer=nn.initializers.glorot_uniform(in_axis=0, out_axis=1),
+    param_dtype=jax.numpy.float32
 ) -> Tuple[jax.Array, None, Hyperparams]:
-    """Intialize variables for a linear transform.
+    """Intialize parameters and hyperparameters for a linear layer.
 
     :param key: PRNG key for weight initialization.
-    :param in_feature_shape: Shape of input features.
-    :param out_feature_shape: Shape of output features.
+    :param in_features: Number of input features.
+    :param out_features: Number of output features.
+    :param dtype: Type of computation. Default: None, inferred from
+        ``param_dtype``.
     :param precision: See ``precision`` parameter of
         ``jax.lax.dot <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.dot_general.html>``,
         which is used internally in the forward pass. Default: None.
     :param accum_dtype: See ``preferred_element_type`` parameter of
         ``jax.lax.dot <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.dot_general.html>``,
         which is used internally in the forward pass. Default: None.
+    :param transposed_kernel: Whether the kernel is of the shape
+        ``(out_features, in_features)`` or ``(in_features, out_features)``.
+        Default: False, ``(in_features, out_features)``.
     :param kernel_initializer: Kernel initializer as defined by
         ``jax.nn.initalizers <https://jax.readthedocs.io/en/latest/jax.nn.initializers.html>``.
         Default:: glorot uniform.
-    :param dtype: Type of initialized kernel weight. Default: None, which means
-        the ``kernel_initializer``'s default.
+    :param param_dtype: Type of initialized kernel weight. Default: float32.
 
-    :returns trainables: Initialized kernel weight of shape
-        ``(*out_feature_shape, *in_feature_shape)``.
+    :returns trainables: Initialized kernel weight.
     :returns non_trainables: None.
     :returns hyperparams: NamedTuple containing the hyperparameters.
     
     .. note:
-        If the ``in_feature_shape`` or ``out_feature_shape`` has more than one
-        dimensions, also override the default ``kernel_initializer`` with one
-        that has the correct ``in_axis`` and ``out_axis``.
+        If you override ``kernel_out_axis_first``, also override the default
+        ``kernel_initializer`` to have  ``in_axis=1`` and ``out_axis=0``.
     """
+    kernel_shape = (
+        out_features, in_features
+    ) if transposed_kernel else (
+        in_features, out_features
+    )
     kernel_weight = kernel_initializer(
         key,
-        (*out_feature_shape, *in_feature_shape),
-        dtype 
+        kernel_shape,
+        param_dtype 
     )
     hyperparams = Hyperparams(
-        precision,
-        accum_dtype
+        transposed_kernel,
+        _utils._canon_dtype(dtype, param_dtype),
+        _utils._canon_precision(precision),
+        _utils._canon_accum_dtype(accum_dtype)
     )
 
     return kernel_weight, None, hyperparams
@@ -66,27 +80,24 @@ def fwd(
 ) -> jax.Array:
     """Apply linear transformation without bias to input features.
 
-    :param x: Input features to the linear transform. Must be of the shape
-        ``(n_batches, *in_feature_shape)``.
-    :param trainables: Trainable weights for a linear transform.
-    :param non_trainables: Non-trainable weights for a linear transform, should
+    :param x: Input features to the linear layer. Must be of ``dtype`` and of
+        the shape ``(n_batches, in_features)``.
+    :param trainables: Trainable weights for a linear layer.
+    :param non_trainables: Non-trainable weights for a linear layer, should
         be None. Ignored.
     :param hyperparams: NamedTuple containing the hyperparameters.
     :param inference_mode: Whether in inference or training mode. Ignored.
         Default: False.
 
     :returns y: ``x`` with linear transformation applied. Shape
-        ``(n_batches, *out_feature_shape)``.
-    :returns non_trainables: Unchanged ``non_trainables``.
+        ``(n_batches, out_features)``.
+    :returns non_trainables: None.
     """
-    input_dim = len(x.shape)
-    kernel_dim = len(trainables.shape)
-    input_contracting_dims = tuple(range(1, input_dim))
-    kernel_contracting_dims = tuple(range(kernel_dim-input_dim+1, kernel_dim))
+    contracting_dims = (1,) if hyperparams.transposed_kernel else (0,)
     return lax.dot_general(
         x,
-        trainables,
-        ((input_contracting_dims, kernel_contracting_dims), ((), ())),
+        lax.convert_element_type(trainables, hyperparams.dtype),
+        (((1,), contracting_dims), ((), ())),
         hyperparams.precision,
         hyperparams.accum_dtype
-    ), non_trainables
+    ), None

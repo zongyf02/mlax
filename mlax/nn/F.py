@@ -10,7 +10,7 @@ def init(
     train_fn: Callable[[jax.Array], jax.Array],
     infer_fn: Optional[Callable[[jax.Array], jax.Array]] = None
 ) -> Tuple[None, None, Hyperparams]:
-    """Initialize variables for an arbitrary pure functional transform.
+    """Initialize a layer that applies an arbitrary pure functional transform.
     
     :params train_fn: Pure function that takes in and returns a JAX array.
         Called during the forward pass in training mode.
@@ -42,9 +42,9 @@ def fwd(
         False, trianing mode.
 
     :returns y: ``x`` with the arbitrary transform applied.
-    :returns non_trainables: Unchanged ``non_trainables``.
+    :returns non_trainables: None.
     """
-    if hyperparams.infer_fn is None or inference_mode is False:
-        return hyperparams.train_fn(x), non_trainables
+    if hyperparams.infer_fn is None or not inference_mode:
+        return hyperparams.train_fn(x), None
     else:
-        return hyperparams.infer_fn(x), non_trainables
+        return hyperparams.infer_fn(x), None
