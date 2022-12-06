@@ -1,4 +1,4 @@
-from mlax.nn import Bias
+from mlax.nn import Scaler
 import jax.numpy as jnp
 from jax import (
     random,
@@ -10,26 +10,26 @@ from jax import (
 dtype = jnp.float16
 key1, key2 = random.split(random.PRNGKey(0), 2)
 inputs = random.normal(key1, (2, 4, 4, 3), dtype=dtype)
-trainables, non_trainables, hyperparams = Bias.init(
+trainables, non_trainables, hyperparams = Scaler.init(
     key2,
     in_feature_shape=(None, 1, 3),
-    bias_initializer=nn.initializers.constant(1, jnp.float32),
-    dtype=dtype # Should override bias initializer's dtype
+    scaler_initializer=nn.initializers.constant(2, jnp.float32),
+    dtype=dtype,
 )
 
 def test_init():
     assert lax.eq(
         trainables,
-        jnp.ones((1, 3), dtype)
+        jnp.full((1, 3), 2, dtype)
     ).all()
     assert non_trainables is None
 
 def test_fwd():
-    activations, new_ntr =  jit(Bias.fwd, static_argnames="hyperparams")(
+    activations, new_ntr =  jit(Scaler.fwd, static_argnames="hyperparams")(
         inputs, trainables, non_trainables, hyperparams
     )
     assert lax.eq(
         activations,
-        lax.convert_element_type(inputs + 1, dtype)
+        lax.convert_element_type(2 * inputs, dtype)
     ).all()
-    assert new_ntr is None 
+    assert new_ntr is None

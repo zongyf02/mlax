@@ -7,8 +7,8 @@ class Hyperparams(NamedTuple):
 def init(
     fn: Callable[[jax.Array, Any, bool], jax.Array]
 ) -> Tuple[None, None, Hyperparams]:
-    """Initialize variables for an arbitrary pure functional transform that
-    consumes a PRNG key.
+    """Initialize a layer that applies an arbitrary pure functional transform 
+    that consumes a PRNG key.
     
     :params fn: Pure function that takes in an input JAX array, a PRNG key, and
         a boolean indicating whether in inference or training mode, and returns
@@ -40,6 +40,6 @@ def fwd(
         False, training_mode.
 
     :returns y: ``x`` with the arbitrary transform applied.
-    :returns non_trainables: Unchanged ``non_trainables``.
+    :returns non_trainables: None.
     """
-    return hyperparams.fn(x, key, inference_mode), non_trainables
+    return hyperparams.fn(x, key, inference_mode), None

@@ -3,8 +3,13 @@ from jax import (
     random,
     lax
 )
+from mlax._utils import (
+    _canon_int_sequence,
+    _canon_opt_int_sequence,
+    _canon_padding
+)
 from math import prod
-from typing import Any, Sequence, Union, Callable
+from typing import Any, Sequence, Union, Callable, Optional
 
 def dropout(
     x: jax.Array,
@@ -41,8 +46,8 @@ def pool(
     window_shape: Sequence[int],
     strides: Union[int, Sequence[int]] = 1,
     padding="VALID",
-    input_dilation=None,
-    window_dilation=None
+    input_dilation: Optional[Union[int, Sequence[int]]] = None,
+    window_dilation: Optional[Union[int, Sequence[int]]] = None
 ) -> jax.Array:
     """Apply an arbitrary reduce function over poolings windows of input
         features.
@@ -52,31 +57,41 @@ def pool(
         window.
     :param reduce_fn: Reduce function.
     :param window_shape: Shape of the pooling window.
-    :param strides: An integer or sequence intergers of the same length as
+    :param strides: An integer or sequence integers of the same length as
         ``window_shape``, specifying the strides of the pooling window along the
         window shape. A single integer specifies the same value for all window
-        dimensions. Default: one.
-    :param padding: See the ``padding`` parameter of
-        `jax.lax.reduce_window`_, which is used internally.
-    :param input_dilation: See the ``base_dilation`` parameter of
-        `jax.lax.reduce_window`_. Default: None, no input dilation.
-    :param window_dilation: See the ``window_dilation`` parameter of
-        `jax.lax.reduce_window`_. Default: None, no window dilation. 
+        dimensions. Default: 1.
+    :param padding: String, integer, or a sequence of `ndims` integers or
+        integer tuple pairs that give the padding to apply before and after
+        each spatial dimension. If integer, the same padding is applied before
+        and after all spatial dimensions. If a sequence of integers, then the
+        same padding is applied before and after each spatial dimension.
+        See the ``padding`` parameter of `jax.lax.reduce_window`_, which is used
+        internally.
+    :param input_dilation: None, an integer, or a sequence of ``ndims``
+        integers, specifying the input dilation rate in each spatial dimension.
+        See the ``base_dilation`` parameter of `jax.lax.reduce_window`_.
+        Default: None, no input dilation.
+    :param window_dilation: None, an integer, or a sequence of ``ndims``
+        integers, specifying the window dilation rate in each spatial dimension.
+        See the ``window_dilation`` parameter of `jax.lax.reduce_window`_.
+        Default: None, no window dilation. 
     
     :returns y: x with pooling applied.
     
     .. _jax.lax.reduce_window:
         https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.reduce_window.html
     """
+    window_ndims = len(window_shape)
     return lax.reduce_window(
         x,
         init_value,
         reduce_fn,
         window_shape,
-        (1,) * len(window_shape) if isinstance(strides, int) else strides,
-        padding,
-        input_dilation,
-        window_dilation
+        _canon_int_sequence(strides, window_ndims),
+        _canon_padding(padding, window_ndims),
+        _canon_opt_int_sequence(input_dilation, window_ndims),
+        _canon_opt_int_sequence(window_dilation, window_ndims)
     )
 
 def max_pool(

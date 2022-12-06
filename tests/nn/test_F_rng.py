@@ -26,4 +26,4 @@ def test_fwd():
         activations,
         inputs
     ).all()
-    assert new_ntr == non_trainables
+    assert new_ntr is None

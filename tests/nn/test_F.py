@@ -30,7 +30,7 @@ def test_fwd():
         activations,
         jnp.ones((2, 3, 3), dtype=dtype)
     ).all()
-    assert new_ntr == non_trainables
+    assert new_ntr is None 
 
     activations, new_ntr = fwd(
         inputs, trainables, non_trainables, hyperparams, inference_mode=True
@@ -39,4 +39,4 @@ def test_fwd():
         activations,
         jnp.full((2, 3, 3), 2, dtype=dtype)
     ).all()
-    assert new_ntr == non_trainables
+    assert new_ntr is None 

@@ -4,6 +4,14 @@ mlax.nn package
 Submodules
 ----------
 
+mlax.nn.BatchNorm module
+------------------------
+
+.. automodule:: mlax.nn.BatchNorm
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 mlax.nn.Bias module
 -------------------
 
@@ -40,6 +48,14 @@ mlax.nn.Linear module
 ---------------------
 
 .. automodule:: mlax.nn.Linear
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+mlax.nn.Scaler module
+---------------------
+
+.. automodule:: mlax.nn.Scaler
    :members:
    :undoc-members:
    :show-inheritance:
