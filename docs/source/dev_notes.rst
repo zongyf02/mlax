@@ -3,7 +3,7 @@ Dev Notes
 
 Planned features ranked by priority
 ------------------------------------
-Batchnorm, attention, recurrent layers.
+Attention, mixed-precision, quantization aware training, recurrent layers.
 
 Is there a performance penalty for having unused function parameters?
 ----------------------------------------------------------------------
@@ -69,3 +69,25 @@ TPU1.
 If you wish for model weights and optimizer states to be allocated to the CPU
 directly, use the `jax.default_device <https://jax.readthedocs.io/en/latest/_autosummary/jax.default_device.html>`_
 context manager.
+
+Transposed vs non-transposed Linear layer weights.
+--------------------------------------------------
+Transposed Linear layer weights could lead to better GEMM performance thanks to
+better data locality. However, in practice, compute libraries like cuDNN have
+equal or better support for GEMM with non-transposed layer weights.
+
+AFAIK, Tensorflow uses non-transposed weights for their Linear layer and Pytorch
+uses transposed weights.
+`Why are weights transposed in Pytorch nn.Linear? <https://github.com/pytorch/pytorch/issues/2159>`_
+
+Convolution kernel layout.
+--------------------------
+For channel-first (NCHW), the kernel layout is OIHW. For channel-last (NHWC),
+the kernel layout is OHWI. Basically, the input batch axis is replaced by the
+ouput channel axis in the kernel, and the input channel axis remains the same.
+
+AFAIK, this differs from Tensorflow, where the kernel layout is HWOI for both
+channel-first and channel-last inputs. mlax doesn't do that is because there
+could a small performance penalty. Compute libraries like cuDNN expects the
+kernel to be in specific layouts and may transpose the kernel layout if needed.
+`cudnnSetFilter4dDescriptor <https://docs.nvidia.com/deeplearning/cudnn/api/index.html#cudnnSetFilter4dDescriptor>`_
