@@ -1,4 +1,6 @@
-from mlax.block.Series import (
-    series_fwd,
-    series_rng_fwd
+from mlax.block import (
+    Series,
+    Series_rng,
+    Parallel,
+    Parallel_rng
 )

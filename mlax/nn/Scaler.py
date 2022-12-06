@@ -3,49 +3,47 @@ from jax import (
     nn,
     lax
 )
-from typing import Tuple, Any, NamedTuple, Sequence
-from mlax.nn import _utils
+from typing import Tuple, Any, NamedTuple, Sequence, Union
 
 class Hyperparams(NamedTuple):
     broadcast_dims: Sequence[int]
-    dtype: Any
 
 def init(
     key: Any,
     in_feature_shape: Sequence[int],
-    scaler_dims: Sequence[int] = (0,),
-    dtype=None,
     scaler_initializer=nn.initializers.ones,
-    param_dtype=jax.numpy.float32
+    dtype=None
 ) -> Tuple[jax.Array, None, Hyperparams]:
     """Intialize parameters and hyperparametersfor a scaler layer.
 
     :param key: PRNG key for weight initialization.
-    :param in_feature_shape: Shape of the input features.
-    :param scaler_dims: Sequence indicating which dimensions in the input
-        features are scaled. Default: (0,).
-    :param dtype: Type of computation. Default: None, inferred from
-        ``param_dtype``.
+    :param in_feature_shape: Shape of the input features to scale. Use ``None``
+        on axes that do not require a scaler, use ``1`` on axes that require a
+        scaler, and ``axis_length`` on axes that require a scaler for each of
+        their elements.
     :param scaler_initializer: Initializer as defined by
         ``jax.nn.initalizers <https://jax.readthedocs.io/en/latest/jax.nn.initializers.html>``.
         Default:: ones.
-    :param param_dtype: Type of initialized bias weight. Default: float32.
+    :param dtype: Type of initialized scaler weight. Default: None.
+        ``scaler_initializer``'s default.
 
     :returns trainables: Initialized scaler weight of shape
-        ``tuple(in_feature_shape[dim] for dim in bias_dims)``.
+        ``tuple(in_feature_shape[dim] for dim in scaler_axis)``.
     :returns non_trainables: None.
     :returns hyperparams: NamedTuple containing the hyperparamters.
     """
     scaler_weight = scaler_initializer(
         key,
-        tuple(in_feature_shape[dim] for dim in scaler_dims),
-        param_dtype
+        tuple(axis for axis in in_feature_shape if axis is not None),
+        dtype
     )
 
     return scaler_weight, None, Hyperparams(
-        tuple(dim + 1 for dim in scaler_dims),
-        _utils._canon_dtype(dtype, param_dtype)
+        tuple(
+            i + 1 for i, axis in enumerate(in_feature_shape) if axis is not None
+        )
     )
+
 
 def fwd(
     x: jax.Array,
@@ -71,7 +69,6 @@ def fwd(
     return lax.mul(
         x,
         lax.broadcast_in_dim(
-            lax.convert_element_type(trainables, hyperparams.dtype), 
-            x.shape, hyperparams.broadcast_dims
+            trainables, x.shape, hyperparams.broadcast_dims
         )
     ), None

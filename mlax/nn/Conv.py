@@ -5,21 +5,25 @@ from jax import (
 )
 from functools import reduce
 from operator import add
-from mlax.nn import _utils
+from mlax._utils import (
+    _canon_int_sequence,
+    _canon_opt_int_sequence,
+    _canon_padding,
+    _canon_opt_dtype,
+    _canon_precision
+)
 from typing import Tuple, Any, Sequence, Union, Optional, NamedTuple
 
 class Hyperparams(NamedTuple):
     window_strides: Sequence[int] 
-    padding: Any
+    padding: Union[str, Sequence[Tuple[int, int]]] 
     input_dilation: Optional[Sequence[int]]
     filter_dilation: Optional[Sequence[int]]
     feature_group_count: int
     batch_group_count: int
     dimension_numbers: Any
-    dtype: Any
     precision: Any 
     accum_dtype: Any
-
 
 def init(
     key: Any,
@@ -27,20 +31,19 @@ def init(
     in_channels: int,
     out_channels: int,
     filter_shape: Union[int, Sequence[int]],
-    strides: Union[int, Sequence[int]] = 1,
-    padding = "VALID",
+    strides: Union[int, Sequence[int]]=1,
+    padding: Union[str, int, Sequence[Union[int, Tuple[int, int]]]] = "VALID",
     input_dilation: Optional[Union[int, Sequence[int]]] = None,
     filter_dilation: Optional[Union[int, Sequence[int]]] = None,
     feature_group_count = 1,
     batch_group_count = 1,
     channel_last: bool=False,
-    dtype=None,
     precision=None,
     accum_dtype=None,
     kernel_in_axis: int=1,
     kernel_out_axis: int=0,
     kernel_initializer=nn.initializers.glorot_uniform(in_axis=1, out_axis=0),
-    param_dtype=jax.numpy.float32
+    dtype=None
 ) -> Tuple[jax.Array, None, Hyperparams]:
     """Intialize parameters and hyperparameters for a convolutional layer.
 
@@ -54,8 +57,12 @@ def init(
     :param strides: An integer or a sequence of ``ndims`` integers, specifying
         the strides of the convolution along the spatial dimensions. A single
         integer specifies the same value for all spatial dimensions. Default: 1.
-    :param padding: See the ``padding`` parameter of
-        `jax.lax.conv_general_dilated`_, which is used internally.
+    :param padding: String, integer, or a sequence of `ndims` integers or
+        integer tuple pairs that give the padding to apply before and after
+        each spatial dimension. If integer, the same padding is applied before
+        and after all spatial dimensions. If a sequence of integers, then the
+        same padding is applied before and after each spatial dimension.
+        See the ``padding`` parameter of `jax.lax.conv_general_dilated`_.
     :param input_dilation: None, an integer, or a sequence of ``ndims``
         integers, specifying the transposed convolution dilation rate in each
         spatial dimension. See the ``lhs_dilation`` parameter of
@@ -71,8 +78,6 @@ def init(
         `jax.lax.conv_general_dilated`_. Default: 1.
     :param channel_last: Whether features are channel-last or first. Default:
         False, channel-first.
-    :param dtype: Type of computation. Default: None, inferred from
-        ``param_dtype``.
     :param precision: See the ``precision`` parameter of
         `jax.lax.conv_general_dilated`_. Default: None.
     :param accum_dtype: See the ``preferred_element_type`` parameter of
@@ -84,7 +89,8 @@ def init(
     :param kernel_initializer: Kernel initializer as defined by
         ``jax.nn.initalizers <https://jax.readthedocs.io/en/latest/jax.nn.initializers.html>``.
         Default:: glorot uniform.
-    :param param_dtype: Type of initialized kernel weight. Default: float32.
+    :param dtype: Type of initialized kernel weight. Default: None.
+        ``kernel_initializer``'s default.
 
     :returns trainables: Initialized kernel weight.
     :returns non_trainables: None.
@@ -140,19 +146,18 @@ def init(
             in_channels if c == "I" else
             next(filter_shape_iter) for c in kernel_spec
         ),
-        param_dtype
+        dtype
     )
     hyperparams = Hyperparams(
-        _utils._canon_int_sequence(strides, ndims),
-        padding,
-        _utils._canon_opt_int_sequence(input_dilation, ndims),
-        _utils._canon_opt_int_sequence(filter_dilation, ndims),
+        _canon_int_sequence(strides, ndims),
+        _canon_padding(padding, ndims),
+        _canon_opt_int_sequence(input_dilation, ndims),
+        _canon_opt_int_sequence(filter_dilation, ndims),
         feature_group_count,
         batch_group_count,
         dimension_numbers,
-        _utils._canon_dtype(dtype, param_dtype),
-        _utils._canon_precision(precision),
-        _utils._canon_accum_dtype(accum_dtype)
+        _canon_precision(precision),
+        _canon_opt_dtype(accum_dtype)
     )
 
     return kernel_weight, None, hyperparams
@@ -181,7 +186,7 @@ def fwd(
 
     return lax.conv_general_dilated(
         x,
-        lax.convert_element_type(trainables, hyperparams.dtype),
+        trainables,
         hyperparams.window_strides,
         hyperparams.padding,
         hyperparams.input_dilation,

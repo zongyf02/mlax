@@ -6,13 +6,11 @@ from jax import (
 )
 from math import prod
 from typing import Tuple, Any, NamedTuple
-from mlax.nn import _utils
 
 class Hyperparams(NamedTuple):
     channel_axis: int
     epsilon: Any
     momentum: Any
-    dtype: Any
 
 def init(
     key,
@@ -20,10 +18,9 @@ def init(
     channel_axis: int=0,
     epsilon=1e-5,
     momentum=0.9,
-    dtype=None,
-    mean_initializer=nn.initializers.ones,
-    var_initializer=nn.initializers.zeros,
-    param_dtype=jax.numpy.float32
+    mean_initializer=nn.initializers.zeros,
+    var_initializer=nn.initializers.ones,
+    dtype=None
 ) -> Tuple[None, Tuple[jax.Array, jax.Array], Hyperparams]:
     """Initialize parameters and hyperparameters for a batch norm layer.
 
@@ -31,30 +28,27 @@ def init(
     :param in_channels: Number of input feature dimensions/channels.
     :param eps: Small number added to variance to avoid divisions by zero.
     :param momemtum: Momentum for the moving average.
-    :param dtype: Type of computation. Default: None, inferred from
-        ``param_dtype``.
     :param mean_initializer: Moving mean initializer as defined by
         ``jax.nn.initalizers <https://jax.readthedocs.io/en/latest/jax.nn.initializers.html>``.
-        Default:: ones.
+        Default:: zeros.
     :param var_initializer: moving variance initializer as defined by
         ``jax.nn.initalizers <https://jax.readthedocs.io/en/latest/jax.nn.initializers.html>``.
-        Default:: zeros.
-    :param param_dtype: Type of initialized kernel weight. Default: float32.
+        Default:: ones.
+    :param dtype: Type of initialized moving mean and variance weight. Default:
+        None. ``mean_initializer`` and ``var_initializer``'s default.
 
     :returns trainables: None.
     :returns non_trainables: Initialized moving average and variance.
     :returns hyperparams: NamedTuple containing the hyperparameters.
     """
     key1, key2 = random.split(key)
-    param_dtype = lax.dtype(param_dtype)
-    moving_mean = mean_initializer(key1, (in_channels,), param_dtype)
-    moving_var = var_initializer(key2, (in_channels,), param_dtype)
+    moving_mean = mean_initializer(key1, (in_channels,), dtype)
+    moving_var = var_initializer(key2, (in_channels,), dtype)
 
     return None, (moving_mean, moving_var), Hyperparams(
         channel_axis,
         epsilon,
-        momentum,
-        _utils._canon_dtype(dtype, param_dtype)
+        momentum
     )
 
 def fwd(
@@ -94,8 +88,6 @@ def fwd(
 
     if inference_mode is True:
         mean, variance = non_trainables
-        mean = lax.convert_element_type(mean, hyperparams.dtype)
-        var = lax.convert_element_type(var, hyperparams.dtype)
     else:
         reduce_dims = tuple(
             i for i in range(len(x.shape)) if i != channel_axis
@@ -103,7 +95,7 @@ def fwd(
 
         n_elems = lax.convert_element_type(
             prod(tuple(d for i, d in enumerate(x.shape) if i != channel_axis)),
-            hyperparams.dtype
+            x.dtype
         )
 
         mean = lax.div(
@@ -121,16 +113,13 @@ def fwd(
             lax.integer_pow(mean, 2)
         )
 
+        moving_mean, moving_var = non_trainables
         momentum = lax.convert_element_type(
-            hyperparams.momentum, hyperparams.dtype
+            hyperparams.momentum, x.dtype
         )
         one_m_momentum = lax.convert_element_type(
-            1.0 - hyperparams.momentum, hyperparams.dtype
+            1.0 - hyperparams.momentum, x.dtype
         )
-        moving_mean, moving_var = non_trainables
-        moving_mean = lax.convert_element_type(moving_mean, hyperparams.dtype)
-        moving_var = lax.convert_element_type(moving_var, hyperparams.dtype)
-
         moving_mean = lax.add(
             moving_mean * momentum,
             mean * one_m_momentum
@@ -151,7 +140,7 @@ def fwd(
                 lax.add(
                     variance,
                     lax.convert_element_type(
-                        hyperparams.epsilon, hyperparams.dtype
+                        hyperparams.epsilon, x.dtype
                     )
                 )
             ),

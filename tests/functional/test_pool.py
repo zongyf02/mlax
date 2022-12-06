@@ -11,7 +11,9 @@ window_shape = (1, 2, 2)
 def test_max_pool():
     activations = max_pool(
         inputs,
-        window_shape
+        window_shape,
+        strides=1,
+        padding=0
     )
     assert lax.eq(
         activations,
@@ -21,7 +23,9 @@ def test_max_pool():
 def test_sum_pool():
     activations = sum_pool(
         inputs,
-        window_shape
+        window_shape,
+        strides=(1, 1, 1),
+        padding=(0, (0, 0), 0)
     )
     assert lax.eq(
         activations,
@@ -31,7 +35,9 @@ def test_sum_pool():
 def test_avg_pool():
     activations = avg_pool(
         inputs,
-        window_shape
+        window_shape,
+        strides=1,
+        padding=(0, 0, 0)
     )
     assert lax.eq(
         activations,

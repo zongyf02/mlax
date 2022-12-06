@@ -4,11 +4,10 @@ from jax import (
     lax
 )
 from typing import Tuple, Sequence, Any, NamedTuple
-from mlax.nn import _utils 
+from mlax._utils import _canon_opt_dtype, _canon_precision
 
 class Hyperparams(NamedTuple):
     transposed_kernel: bool
-    dtype: Any
     precision: Any
     accum_dtype: Any
 
@@ -16,20 +15,17 @@ def init(
     key: Any,
     in_features: int,
     out_features: int,
-    dtype=None,
     precision=None,
     accum_dtype=None,
     transposed_kernel=False,
     kernel_initializer=nn.initializers.glorot_uniform(in_axis=0, out_axis=1),
-    param_dtype=jax.numpy.float32
+    dtype=None
 ) -> Tuple[jax.Array, None, Hyperparams]:
     """Intialize parameters and hyperparameters for a linear layer.
 
     :param key: PRNG key for weight initialization.
     :param in_features: Number of input features.
     :param out_features: Number of output features.
-    :param dtype: Type of computation. Default: None, inferred from
-        ``param_dtype``.
     :param precision: See ``precision`` parameter of
         ``jax.lax.dot <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.dot_general.html>``,
         which is used internally in the forward pass. Default: None.
@@ -42,7 +38,8 @@ def init(
     :param kernel_initializer: Kernel initializer as defined by
         ``jax.nn.initalizers <https://jax.readthedocs.io/en/latest/jax.nn.initializers.html>``.
         Default:: glorot uniform.
-    :param param_dtype: Type of initialized kernel weight. Default: float32.
+    :param dtype: Type of initialized kernel weight. Default: None.
+        ``kernel_initializer``'s default.
 
     :returns trainables: Initialized kernel weight.
     :returns non_trainables: None.
@@ -60,13 +57,12 @@ def init(
     kernel_weight = kernel_initializer(
         key,
         kernel_shape,
-        param_dtype 
+        dtype 
     )
     hyperparams = Hyperparams(
         transposed_kernel,
-        _utils._canon_dtype(dtype, param_dtype),
-        _utils._canon_precision(precision),
-        _utils._canon_accum_dtype(accum_dtype)
+        _canon_precision(precision),
+        _canon_opt_dtype(accum_dtype)
     )
 
     return kernel_weight, None, hyperparams
@@ -96,7 +92,7 @@ def fwd(
     contracting_dims = (1,) if hyperparams.transposed_kernel else (0,)
     return lax.dot_general(
         x,
-        lax.convert_element_type(trainables, hyperparams.dtype),
+        trainables,
         (((1,), contracting_dims), ((), ())),
         hyperparams.precision,
         hyperparams.accum_dtype

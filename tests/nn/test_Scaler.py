@@ -8,21 +8,19 @@ from jax import (
 )
 
 dtype = jnp.float16
-param_dtype = jnp.float32
-inputs = jnp.full((2, 4, 3), 2, dtype=dtype)
+key1, key2 = random.split(random.PRNGKey(0), 2)
+inputs = random.normal(key1, (2, 4, 4, 3), dtype=dtype)
 trainables, non_trainables, hyperparams = Scaler.init(
-    random.PRNGKey(0),
-    in_feature_shape=(4, 3),
-    scaler_dims=(1,),
+    key2,
+    in_feature_shape=(None, 1, 3),
+    scaler_initializer=nn.initializers.constant(2, jnp.float32),
     dtype=dtype,
-    scaler_initializer=nn.initializers.constant(1, dtype),
-    param_dtype=param_dtype # Should override bias initializer's dtype
 )
 
 def test_init():
     assert lax.eq(
         trainables,
-        jnp.ones((3,), param_dtype)
+        jnp.full((1, 3), 2, dtype)
     ).all()
     assert non_trainables is None
 
@@ -32,6 +30,6 @@ def test_fwd():
     )
     assert lax.eq(
         activations,
-        jnp.full((2, 4, 3), 2, dtype)
+        lax.convert_element_type(2 * inputs, dtype)
     ).all()
     assert new_ntr is None
