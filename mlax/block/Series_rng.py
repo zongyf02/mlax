@@ -7,7 +7,7 @@ from functools import reduce
 from mlax._utils import _get_fwd, _needs_key
 
 class Hyperparams(NamedTuple):
-    layers: Tuple[Any]
+    layers: Tuple
 
 def init(
     *layers

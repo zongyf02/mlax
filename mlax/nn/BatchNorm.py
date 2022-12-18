@@ -74,35 +74,32 @@ def fwd(
     :returns non_trainables: Updated non-trainables.
 
     .. note:
-        If you wish to batch normalize using the moving mean and variance in
-        inference mode, simply use ``mlax.nn.F`` and ``jax.nn.standarize``.
-
-    .. note:
-        The variance is calculated per ``jax.nn.standarize``'s implementation.
+        If you wish to batch normalize without using a moving mean and variance
+        in inference mode, simply use ``mlax.nn.F`` and ``jax.nn.standarize``.
     """
     channel_axis = (
         hyperparams.channel_axis + len(x.shape) if hyperparams.channel_axis < 0
         else hyperparams.channel_axis + 1
     )
-    broadcast_dims = (channel_axis,)
 
     if inference_mode is True:
-        mean, variance = non_trainables
+        mean, var = non_trainables
+        mean = lax.convert_element_type(mean, x.dtype)
+        var = lax.convert_element_type(var, x.dtype)
     else:
-        reduce_dims = tuple(
-            i for i in range(len(x.shape)) if i != channel_axis
-        )
-
+        # Compute mean and variance
         n_elems = lax.convert_element_type(
             prod(tuple(d for i, d in enumerate(x.shape) if i != channel_axis)),
             x.dtype
         )
-
+        reduce_dims = tuple(
+            i for i in range(len(x.shape)) if i != channel_axis
+        )
         mean = lax.div(
             lax.reduce(x, 0, lax.add, reduce_dims),
             n_elems
         )
-        variance = lax.sub(
+        var = lax.sub(
             lax.div(
                 lax.reduce(
                     lax.integer_pow(x, 2), # integer_pow not in lax docs
@@ -113,23 +110,25 @@ def fwd(
             lax.integer_pow(mean, 2)
         )
 
+        # Update non_trainables
         moving_mean, moving_var = non_trainables
         momentum = lax.convert_element_type(
-            hyperparams.momentum, x.dtype
+            hyperparams.momentum, moving_mean.dtype
         )
         one_m_momentum = lax.convert_element_type(
-            1.0 - hyperparams.momentum, x.dtype
+            1.0 - hyperparams.momentum, moving_mean.dtype
         )
         moving_mean = lax.add(
             moving_mean * momentum,
-            mean * one_m_momentum
+            lax.convert_element_type(mean, moving_mean.dtype) * one_m_momentum
         )
         moving_var = lax.add(
             moving_var * momentum,
-            variance * one_m_momentum
+            lax.convert_element_type(var, moving_var.dtype) * one_m_momentum
         )
         non_trainables = (moving_mean, moving_var)
-    
+
+    broadcast_dims = (channel_axis,)
     return lax.mul(
         lax.sub(
             x,
@@ -138,7 +137,7 @@ def fwd(
         lax.broadcast_in_dim(
             lax.rsqrt(
                 lax.add(
-                    variance,
+                    var,
                     lax.convert_element_type(
                         hyperparams.epsilon, x.dtype
                     )

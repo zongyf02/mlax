@@ -186,7 +186,7 @@ def fwd(
 
     return lax.conv_general_dilated(
         x,
-        trainables,
+        lax.convert_element_type(trainables, x.dtype),
         hyperparams.window_strides,
         hyperparams.padding,
         hyperparams.input_dilation,

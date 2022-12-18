@@ -68,6 +68,8 @@ def fwd(
     return lax.add(
         x,
         lax.broadcast_in_dim(
-            trainables, x.shape, hyperparams.broadcast_dims
+            lax.convert_element_type(trainables, x.dtype),
+            x.shape,
+            hyperparams.broadcast_dims
         )
     ), None

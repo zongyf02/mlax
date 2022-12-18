@@ -92,7 +92,7 @@ def fwd(
     contracting_dims = (1,) if hyperparams.transposed_kernel else (0,)
     return lax.dot_general(
         x,
-        trainables,
+        lax.convert_element_type(trainables, x.dtype),
         (((1,), contracting_dims), ((), ())),
         hyperparams.precision,
         hyperparams.accum_dtype

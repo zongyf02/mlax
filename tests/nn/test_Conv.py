@@ -8,10 +8,10 @@ from jax import (
 )
 
 key1, key2 = random.split(random.PRNGKey(0))
-dtype = jnp.float16
-accum_dtype=jnp.float32
-inputs1 = jnp.ones((4, 3, 32, 32), dtype)
-inputs2 = jnp.ones((4, 32, 32, 3), dtype)
+dtype=jnp.float32
+op_dtype = jnp.float16
+inputs1 = jnp.ones((4, 3, 32, 32), op_dtype)
+inputs2 = jnp.ones((4, 32, 32, 3), op_dtype)
 trainables1, non_trainables1, hyperparams1 = Conv.init(
     key1,
     ndims=2,
@@ -22,7 +22,7 @@ trainables1, non_trainables1, hyperparams1 = Conv.init(
     input_dilation=1,
     filter_dilation=1,
     precision="high",
-    kernel_initializer=nn.initializers.constant(1, dtype=jnp.float32),
+    kernel_initializer=nn.initializers.constant(1, dtype=jnp.bfloat16),
     dtype=dtype
 )
 trainables2, non_trainables2, hyperparams2 = Conv.init(
@@ -37,10 +37,10 @@ trainables2, non_trainables2, hyperparams2 = Conv.init(
     filter_dilation=(1, 1),
     channel_last=True,
     precision=None,
-    accum_dtype=accum_dtype,
+    accum_dtype=dtype,
     kernel_in_axis=-1,
     kernel_out_axis=0, # OHWI kernel layout
-    kernel_initializer=nn.initializers.constant(1, dtype=dtype),
+    kernel_initializer=nn.initializers.constant(1, dtype=jnp.bfloat16),
     dtype=dtype
 )
 
@@ -66,7 +66,7 @@ def test_fwd():
     )
     assert lax.eq(
         activations,
-        jnp.full((4, 16, 28, 28), 75, dtype)
+        jnp.full((4, 16, 28, 28), 75, op_dtype)
     ).all()
     assert new_ntr is None 
 
@@ -78,6 +78,6 @@ def test_fwd():
     )
     assert lax.eq(
         activations,
-        jnp.full((4, 28, 28, 16), 75, accum_dtype)
+        jnp.full((4, 28, 28, 16), 75, dtype)
     ).all()
     assert new_ntr is None

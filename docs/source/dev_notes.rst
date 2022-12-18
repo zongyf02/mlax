@@ -3,7 +3,7 @@ Dev Notes
 
 Planned features ranked by priority
 ------------------------------------
-Attention, mixed-precision, quantization aware training, recurrent layers.
+Attention, recurrent layers.
 
 Is there a performance penalty for having unused function parameters?
 ----------------------------------------------------------------------

@@ -23,10 +23,6 @@ Functions are imported from mlax. Trainable and non-trainable weights are JAX
 arrays stored in distinct PyTrees. Hyperparameters are NamedTuples containing
 hashable Python types (usually not valid JAX types).
 
-mlax does not promote types implicitly. This means, for example, passing
-`float16` inputs to a layer with `float32` weights will result in a runtime
-error. This is to avoid surprises in mixed-precision operations.
-
 mlax consists of 3 sub-packages and modules:
 
 .. toctree::
