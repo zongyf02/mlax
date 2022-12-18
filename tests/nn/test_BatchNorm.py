@@ -8,8 +8,9 @@ from jax import (
 )
 
 key1, key2 = random.split(random.PRNGKey(0))
-dtype = jnp.float32
-inputs = random.normal(key1, (4, 16, 16, 3), dtype)
+dtype = jnp.float16
+op_dtype = jnp.float32
+inputs = random.normal(key1, (4, 16, 16, 3), op_dtype)
 trainables, non_trainables, hyperparams = BatchNorm.init(
     key2,
     in_channels=3,
@@ -44,13 +45,16 @@ def test_fwd():
     
     assert lax.eq(
         moving_mean,
-        inputs.mean((0, 1, 2)) * 0.1
+        inputs.mean((0, 1, 2), dtype=op_dtype).astype(dtype) * 0.1
     ).all()
     # Small error tolerated because numpy var is calculated differently
     assert (
         lax.abs(lax.sub(
-            moving_var - jnp.full((3,), 0.9, dtype),
-            inputs.var((0, 1, 2)) * 0.1
+            moving_var,
+            (
+                jnp.ones((3,), dtype=dtype) * 0.9 +
+                inputs.var((0, 1, 2), dtype=op_dtype).astype(dtype) * 0.1
+            )
         )) < 1e-6
     ).all()
     
@@ -60,4 +64,3 @@ def test_fwd():
     assert (
        lax.abs(lax.sub(activations, inputs)) < 1e-4
     ).all()
- 

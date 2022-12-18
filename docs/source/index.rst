@@ -6,17 +6,13 @@
 Welcome to mlax's documentation!
 ================================
 
-`Installation Guide <https://github.com/zongyf02/mlax#installation>`_
-
-`Quick Start <https://github.com/zongyf02/mlax#quickstart>`_
-
-`Code Examples <https://github.com/zongyf02/mlax/tree/main/examples>`_
-
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   overview
+   installation
+   examples
+   api_overview
    faq
    apidocs/modules 
    dev_notes

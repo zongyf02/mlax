@@ -19,6 +19,13 @@ def _canon_int_sequence(int_or_seq, length):
         tuple(int_or_seq)
     )
 
+def _canon_opt_int_sequence(opt_int_or_seq, length):
+    return (
+        None if opt_int_or_seq is None else
+        (opt_int_or_seq,) * length if isinstance(opt_int_or_seq, int) else
+        tuple(opt_int_or_seq)
+    )
+
 def _canon_padding(padding, ndims):
     return (
         padding if isinstance(padding, str) else
@@ -28,16 +35,8 @@ def _canon_padding(padding, ndims):
         )
     )
 
-def _canon_opt_int_sequence(opt_int_or_seq, length):
-    return (
-        None if opt_int_or_seq is None else
-        (opt_int_or_seq,) * length if isinstance(opt_int_or_seq, int) else
-        tuple(opt_int_or_seq)
-    )
-
 def _get_fwd(hyperparams):
     return sys.modules[hyperparams.__module__].fwd
 
 def _needs_key(fwd):
     return signature(fwd).parameters.__contains__("key")
- 

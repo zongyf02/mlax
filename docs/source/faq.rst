@@ -17,8 +17,24 @@ static arguments to be hashable and immutable. Avoid passing lists and other
 non-hashable types to the layers' ``init`` function; doing so may result in
 non-hashable ``hyperparams``.
 
-How to manage where variables are stored and how data flows in my model?
-------------------------------------------------------------------------
+How to perform mixed-precision training in mlax?
+------------------------------------------------
+Most mlax layers' ``init`` function have a ``dtype`` parameter, which controls
+the data type of the initialized weights. mlax layers' and blocks' ``fwd``
+function will implicitly cast the weights to the dtype of the input features,
+meaning the compute type of the forward pass is always the input's dtype.
+
+Therefore, to maintain full-precision weights but compute in half-precision,
+simply ensure that each layer receives half-precision inputs.
+
+Some operations/layers, such as softmax and ``mlax.nn.BatchNorm``, need
+full-precision for numerical stability. For those layers, cast the input
+activations to full-precision, and output activations back to half-precision.
+
+Mixed-precision examples can be found in the Worked Examples.
+
+How to manage device placement in mlax?
+---------------------------------------
 First, read up on JAX's
 `Controlling data and computation placement on devices <https://jax.readthedocs.io/en/latest/faq.html#controlling-data-and-computation-placement-on-devices>`_.
 

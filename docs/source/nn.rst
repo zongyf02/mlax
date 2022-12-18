@@ -16,9 +16,13 @@ Modules under ``mlax.nn`` each has two functions:
     activations and new non-trainable weights.
 
 .. warning::
-    Because mlax does not promote dtypes implicitly, the inputs and initialized
-    weights to ``fwd`` must be of the same type. Unless explicitly overridden,
-    the returned activations will also be of that type.
+    A ``fwd`` function's compute dtype is the input dtype. That means that all
+    trainables will be implicitly casted to the input features' dtype prior to
+    any calculations. So, unless overridden, all intermediates and the final
+    activations will also in that same dtype.
+
+    If there are non-trainables, they are updated from intermediates that are
+    casted back to the non-trainables' dtype.
 
 ``mlax.nn`` also has two special modules: ``mlax.nn.F`` and ``mlax.nn.F_rng``.
 They are used to convert stateless functions, such as those from ``jax.nn`` and
