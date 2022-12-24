@@ -1,15 +1,16 @@
 import jax
-from inspect import signature
-from typing import Tuple, Callable, NamedTuple, Optional
+from typing import Tuple, Callable, Optional
+from mlax._utils import _nn_hyperparams
 
-class Hyperparams(NamedTuple):
+@_nn_hyperparams
+class FHp:
     train_fn: Callable[[jax.Array], jax.Array]
     infer_fn: Optional[Callable[[jax.Array], jax.Array]]
 
 def init(
     train_fn: Callable[[jax.Array], jax.Array],
     infer_fn: Optional[Callable[[jax.Array], jax.Array]] = None
-) -> Tuple[None, None, Hyperparams]:
+) -> Tuple[None, None, FHp]:
     """Initialize a layer that applies an arbitrary pure functional transform.
     
     :params train_fn: Pure function that takes in and returns a JAX array.
@@ -20,15 +21,15 @@ def init(
     
     :returns trainables: None.
     :returns non_trainables: None.
-    :returns hyperparams: NamedTuple containing the hyperparameters.
+    :returns hyperparams: FHp instance.
     """
-    return None, None, Hyperparams(train_fn, infer_fn)
+    return None, None, FHp(train_fn, infer_fn)
 
 def fwd(
     x: jax.Array,
     trainables: None,
     non_trainables: None,
-    hyperparams: Hyperparams,
+    hyperparams: FHp,
     inference_mode: bool=False
 ) -> jax.Array:
     """Apply an arbitrary pure functional transform on input features that does
@@ -37,7 +38,7 @@ def fwd(
     :param x: Input features.
     :param trainables: Trainable weights, should be None. Ignored.
     :param non_trainables: Non-trainable weights, should be None. Ignored.
-    :param hyperparams: NamedTuple containing the hyperparameters. 
+    :param hyperparams: FHp instance.
     :param inference_mode: Whether in inference or training mode. Default:
         False, trianing mode.
 

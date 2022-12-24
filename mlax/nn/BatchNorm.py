@@ -5,9 +5,11 @@ from jax import (
     random
 )
 from math import prod
-from typing import Tuple, Any, NamedTuple
+from typing import Tuple, Any
+from mlax._utils import _nn_hyperparams
 
-class Hyperparams(NamedTuple):
+@_nn_hyperparams
+class BatchNormHp:
     channel_axis: int
     epsilon: Any
     momentum: Any
@@ -21,11 +23,12 @@ def init(
     mean_initializer=nn.initializers.zeros,
     var_initializer=nn.initializers.ones,
     dtype=None
-) -> Tuple[None, Tuple[jax.Array, jax.Array], Hyperparams]:
+) -> Tuple[None, Tuple[jax.Array, jax.Array], BatchNormHp]:
     """Initialize parameters and hyperparameters for a batch norm layer.
 
     :param key: PRNG key for weight initialization.
     :param in_channels: Number of input feature dimensions/channels.
+    :param channel_axis: Axis of the channel dimension.
     :param eps: Small number added to variance to avoid divisions by zero.
     :param momemtum: Momentum for the moving average.
     :param mean_initializer: Moving mean initializer as defined by
@@ -39,13 +42,13 @@ def init(
 
     :returns trainables: None.
     :returns non_trainables: Initialized moving average and variance.
-    :returns hyperparams: NamedTuple containing the hyperparameters.
+    :returns hyperparams: BatchNormHp instance.
     """
     key1, key2 = random.split(key)
     moving_mean = mean_initializer(key1, (in_channels,), dtype)
     moving_var = var_initializer(key2, (in_channels,), dtype)
 
-    return None, (moving_mean, moving_var), Hyperparams(
+    return None, (moving_mean, moving_var), BatchNormHp(
         channel_axis,
         epsilon,
         momentum
@@ -55,7 +58,7 @@ def fwd(
     x: jax.Array,
     trainables: None,
     non_trainables: Tuple[jax.Array, jax.Array],
-    hyperparams: Hyperparams,
+    hyperparams: BatchNormHp,
     inference_mode: bool=False
 ) -> Tuple[jax.Array, Tuple[jax.Array, jax.Array]]:
     """Apply batch normalization without the learnable parameters.
@@ -64,7 +67,7 @@ def fwd(
     :param trainables: Trainable weights for a batch norm. Should be None.
         Ignored.
     :param non_trainables: Non-trainable weights for a batch norm.
-    :param hyperparams: NamedTuple containing the hyperparameters.
+    :param hyperparams: BatchNormHp instance.
     :param inference_mode: Whether in inference or training mode. If in
         inference mode, the moving mean and variance are used to normalize input
         features. If in training mode, the batch mean and variance are used, and

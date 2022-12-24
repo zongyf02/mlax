@@ -34,10 +34,12 @@ trainables, non_trainables, hyperparams = Series.init(
     F.init(
         lambda x: jnp.reshape(x, (2, -1))
     ),
-    Linear.init(
-        next(keys_iter),
-        in_features=144, out_features=3,
-        kernel_initializer=nn.initializers.ones
+    Series.init(
+        Linear.init(
+            next(keys_iter),
+            in_features=144, out_features=3,
+            kernel_initializer=nn.initializers.ones
+        )
     ),
     F.init(
         lambda x: x,

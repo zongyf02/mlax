@@ -5,16 +5,18 @@ from jax import (
 )
 from functools import reduce
 from operator import add
+from typing import Tuple, Any, Sequence, Union, Optional
 from mlax._utils import (
     _canon_int_sequence,
     _canon_opt_int_sequence,
     _canon_padding,
     _canon_opt_dtype,
-    _canon_precision
+    _canon_precision,
+    _nn_hyperparams
 )
-from typing import Tuple, Any, Sequence, Union, Optional, NamedTuple
 
-class Hyperparams(NamedTuple):
+@_nn_hyperparams
+class ConvHp:
     window_strides: Sequence[int] 
     padding: Union[str, Sequence[Tuple[int, int]]] 
     input_dilation: Optional[Sequence[int]]
@@ -44,7 +46,7 @@ def init(
     kernel_out_axis: int=0,
     kernel_initializer=nn.initializers.glorot_uniform(in_axis=1, out_axis=0),
     dtype=None
-) -> Tuple[jax.Array, None, Hyperparams]:
+) -> Tuple[jax.Array, None, ConvHp]:
     """Intialize parameters and hyperparameters for a convolutional layer.
 
     :param key: PRNG key for weight initialization.
@@ -94,7 +96,7 @@ def init(
 
     :returns trainables: Initialized kernel weight.
     :returns non_trainables: None.
-    :returns hyperparams: NamedTuple containing the hyperparameters.
+    :returns hyperparams: ConvHp instance.
 
     .. note:
         By default, because ``kernel_in_axis=1`` and ``kernel_out_axis=0``, the
@@ -148,7 +150,7 @@ def init(
         ),
         dtype
     )
-    hyperparams = Hyperparams(
+    hyperparams = ConvHp(
         _canon_int_sequence(strides, ndims),
         _canon_padding(padding, ndims),
         _canon_opt_int_sequence(input_dilation, ndims),
@@ -166,7 +168,7 @@ def fwd(
     x: jax.Array,
     trainables: jax.Array,
     non_trainables: None,
-    hyperparams: Hyperparams,
+    hyperparams: ConvHp,
     inference_mode: bool=False
 ) -> jax.Array:
     """Applies convolutions on input features.
@@ -176,7 +178,7 @@ def fwd(
     :param trainables: Trainable weights for a convolutional layer.
     :param non_trainables: Non-trainable weights for a convolutional layer,
         should be None. Ignored.
-    :param hyperparams: NamedTuple containing the hyperparameters.
+    :param hyperparams: ConvHp instance.
     :param inference_mode: Whether in inference or training mode. Ignored.
         Default: False.
  

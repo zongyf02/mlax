@@ -3,10 +3,15 @@ from jax import (
     nn,
     lax
 )
-from typing import Tuple, Sequence, Any, NamedTuple
-from mlax._utils import _canon_opt_dtype, _canon_precision
+from typing import Tuple, Sequence, Any
+from mlax._utils import (
+    _canon_opt_dtype,
+    _canon_precision,
+    _nn_hyperparams
+)
 
-class Hyperparams(NamedTuple):
+@_nn_hyperparams
+class LinearHp:
     transposed_kernel: bool
     precision: Any
     accum_dtype: Any
@@ -20,7 +25,7 @@ def init(
     transposed_kernel=False,
     kernel_initializer=nn.initializers.glorot_uniform(in_axis=0, out_axis=1),
     dtype=None
-) -> Tuple[jax.Array, None, Hyperparams]:
+) -> Tuple[jax.Array, None, LinearHp]:
     """Intialize parameters and hyperparameters for a linear layer.
 
     :param key: PRNG key for weight initialization.
@@ -43,7 +48,7 @@ def init(
 
     :returns trainables: Initialized kernel weight.
     :returns non_trainables: None.
-    :returns hyperparams: NamedTuple containing the hyperparameters.
+    :returns hyperparams: LinearHp instance.
     
     .. note:
         If you override ``kernel_out_axis_first``, also override the default
@@ -59,7 +64,7 @@ def init(
         kernel_shape,
         dtype 
     )
-    hyperparams = Hyperparams(
+    hyperparams = LinearHp(
         transposed_kernel,
         _canon_precision(precision),
         _canon_opt_dtype(accum_dtype)
@@ -71,7 +76,7 @@ def fwd(
     x: jax.Array,
     trainables: jax.Array,
     non_trainables: None,
-    hyperparams: Hyperparams,
+    hyperparams: LinearHp,
     inference_mode: bool=False
 ) -> jax.Array:
     """Apply linear transformation without bias to input features.
@@ -81,7 +86,7 @@ def fwd(
     :param trainables: Trainable weights for a linear layer.
     :param non_trainables: Non-trainable weights for a linear layer, should
         be None. Ignored.
-    :param hyperparams: NamedTuple containing the hyperparameters.
+    :param hyperparams: LinearHp instance.
     :param inference_mode: Whether in inference or training mode. Ignored.
         Default: False.
 

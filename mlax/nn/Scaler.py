@@ -3,9 +3,11 @@ from jax import (
     nn,
     lax
 )
-from typing import Tuple, Any, NamedTuple, Sequence, Union
+from typing import Tuple, Any, Sequence
+from mlax._utils import _nn_hyperparams
 
-class Hyperparams(NamedTuple):
+@_nn_hyperparams
+class ScalerHp:
     broadcast_dims: Sequence[int]
 
 def init(
@@ -13,7 +15,7 @@ def init(
     in_feature_shape: Sequence[int],
     scaler_initializer=nn.initializers.ones,
     dtype=None
-) -> Tuple[jax.Array, None, Hyperparams]:
+) -> Tuple[jax.Array, None, ScalerHp]:
     """Intialize parameters and hyperparametersfor a scaler layer.
 
     :param key: PRNG key for weight initialization.
@@ -30,7 +32,7 @@ def init(
     :returns trainables: Initialized scaler weight of shape
         ``tuple(in_feature_shape[dim] for dim in scaler_axis)``.
     :returns non_trainables: None.
-    :returns hyperparams: NamedTuple containing the hyperparamters.
+    :returns hyperparams: ScalerHp instance.
     """
     scaler_weight = scaler_initializer(
         key,
@@ -38,7 +40,7 @@ def init(
         dtype
     )
 
-    return scaler_weight, None, Hyperparams(
+    return scaler_weight, None, ScalerHp(
         tuple(
             i + 1 for i, axis in enumerate(in_feature_shape) if axis is not None
         )
@@ -49,7 +51,7 @@ def fwd(
     x: jax.Array,
     trainables: jax.Array,
     non_trainables: None,
-    hyperparams: Hyperparams,
+    hyperparams: ScalerHp,
     inference_mode: bool=False
 ) -> jax.Array:
     """Scale input features.
@@ -59,7 +61,7 @@ def fwd(
     :param trainables: Trainable weights for a scaler layer.
     :param non_trainables: Non-trainable weights for a scaler layer, should
         be None. Ignored.
-    :param hyperparams: NamedTuple containing the hyperparameters. 
+    :param hyperparams: ScalerHp instance.
     :param inference_mode: Whether in inference or training mode. Ignored.
         Default: False.
 

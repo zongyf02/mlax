@@ -35,13 +35,17 @@ trainables, non_trainables, hyperparams = Series_rng.init(
     F.init(
         lambda x: jnp.reshape(x, (2, -1))
     ),
-    Linear.init(
-        next(keys_iter),
-        in_features=144, out_features=3,
-        kernel_initializer=nn.initializers.ones
+    Series_rng.init(
+        Linear.init(
+            next(keys_iter),
+            in_features=144, out_features=3,
+            kernel_initializer=nn.initializers.ones
+        )
     ),
-    F_rng.init(
-        lambda x, key, infer: 0 if infer else dropout(x, key, 1.0, infer)
+    Series_rng.init(
+        F_rng.init(
+            lambda x, key, infer: 0 if infer else dropout(x, key, 1.0, infer)
+        )
     )
 )
 

@@ -1,12 +1,14 @@
 import jax
-from typing import Tuple, Callable, Any, NamedTuple
+from typing import Tuple, Callable, Any
+from mlax._utils import _nn_hyperparams
 
-class Hyperparams(NamedTuple):
+@_nn_hyperparams
+class FRngHp:
     fn: Callable[[jax.Array, Any, bool], jax.Array]
 
 def init(
     fn: Callable[[jax.Array, Any, bool], jax.Array]
-) -> Tuple[None, None, Hyperparams]:
+) -> Tuple[None, None, FRngHp]:
     """Initialize a layer that applies an arbitrary pure functional transform 
     that consumes a PRNG key.
     
@@ -16,16 +18,16 @@ def init(
     
     :returns trainables: None.
     :returns non_trainables: None.
-    :returns hyperparams: NamedTuple containing the hyperparameters.
+    :returns hyperparams: FRngHp instance.
     """
-    return None, None, Hyperparams(fn)
+    return None, None, FRngHp(fn)
 
 def fwd(
     x: jax.Array,
     trainables: None,
     non_trainables: None,
     key: Any,
-    hyperparams: Hyperparams,
+    hyperparams: FRngHp,
     inference_mode: bool=False
 ) -> jax.Array:
     """Apply an arbitrary pure functional transform that consumes a PRNG key to 
@@ -35,7 +37,7 @@ def fwd(
     :param trainables: Trainable weights, should be None. Ignored.
     :param non_trainables: Non-trainable weights, should be None. Ignored.
     :param key: PRNG key.
-    :param hyperparams: NamedTuple containing the hyperparameters.
+    :param hyperparams: FRngHp instance.
     :param inference_mode: Whether in inference or training mode. Default:
         False, training_mode.
 

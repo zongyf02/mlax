@@ -2,16 +2,17 @@ from jax import (
     tree_util
 )
 from typing import Tuple, Any, NamedTuple
-from mlax._utils import _get_fwd
+from mlax._utils import _get_fwd, _block_hyperparams
 
-class Hyperparams(NamedTuple):
+@_block_hyperparams
+class ParallelHp:
     layers: Tuple
 
 def init(
     *layers
-) -> Tuple[Tuple, Tuple, Hyperparams]:
+) -> Tuple[Tuple, Tuple, ParallelHp]:
     """Initialize parameters and hyperparameters for a layer that combines
-    layers that do not require PRNGKeys in parallel.
+    sub-layers that do not require PRNGKeys in parallel.
 
     :param layers: Initialized parameters and hyperparameters from each of the
         sub-layers.
@@ -19,30 +20,30 @@ def init(
     :returns trainables: Tuple of trainable weights from each of the sub-layers.
     :returns non_trainables: Tuple of non-trainable weights from each of the 
         sub-layers.
-    :returns hyperparams: NamedTuple containing the hyperparameters.
+    :returns hyperparams: ParallelHp instance.
     """
     trainables, non_trainables, hyperparams = zip(*layers)
-    return trainables, non_trainables, Hyperparams(hyperparams)
+    return trainables, non_trainables, ParallelHp(hyperparams)
 
 def fwd(
     x: Any,
-    trainables: Tuple[Any],
-    non_trainables: Tuple[Any],
-    hyperparams: Tuple[Any],
+    trainables: Tuple,
+    non_trainables: Tuple,
+    hyperparams: ParallelHp,
     inference_mode: bool=False
-):
+)  -> Tuple[Any, Tuple]:
     """Apply layers that do not require PRNG keys in parallel.
 
     :param x: PyTree of input features for each of the layers.
     :param trainables: Tuple of trainable weights from each of the layers.
     :param non_trainables: Tuple of non-trainable weights from each of the
         layers.
-    :param hyperparams: NamedTuple containing the hyperparameters.
+    :param hyperparams: ParallelHp instance.
     :param inference_mode: Whether in inference or training mode. Default:
         False, training mode.
 
     :returns y: PyTree of ``x`` with layers applied.
-    :returns non_trainables: Updated ``non_trainables`` from each of the layer.
+    :returns non_trainables: Updated ``non_trainables`` from each of the layers.
     """
     x, treedef = tree_util.tree_flatten(x)
 
