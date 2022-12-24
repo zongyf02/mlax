@@ -11,6 +11,15 @@ from mlax._utils import (
 from math import prod
 from typing import Any, Sequence, Union, Callable, Optional
 
+def identity(x: jax.Array):
+    """Identity function.
+    
+    :param x: Input features.
+
+    :returns y: ``x``.
+    """
+    return x
+
 def dropout(
     x: jax.Array,
     key: Any,
