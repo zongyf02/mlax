@@ -1,7 +1,7 @@
 from jax import lax, tree_util
 import sys
 from inspect import signature
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, is_dataclass
 
 def _canon_precision(precision):
     if precision is None or isinstance(precision, lax.Precision):
@@ -44,17 +44,5 @@ def _needs_key(fwd):
 
 _nn_hyperparams = dataclass(frozen=True, slots=True)
 
-def _block_hyperparams(cls):
-    cls = dataclass(cls, frozen=True, slots=True)
-
-    def flatten(obj):
-        return tuple(getattr(obj, field.name) for field in fields(obj)), None
-    def unflatten(cls, aux_data, children):
-        return cls(*children)
-    tree_util.register_pytree_node(
-        cls,
-        flatten,
-        unflatten
-    )
-
-    return cls
+def _is_nn_hyperparams(obj):
+    return is_dataclass(obj) and not isinstance(obj, type)

@@ -2,46 +2,53 @@ from jax import (
     tree_util,
     random
 )
-from typing import Tuple, Any, NamedTuple
-from mlax._utils import _get_fwd, _needs_key, _block_hyperparams
-
-@_block_hyperparams
-class ParallelRngHp:
-    layers: Tuple
+from typing import Tuple, Any
+from collections import namedtuple
+from mlax._utils import _get_fwd, _needs_key
 
 def init(
     *layers
-) -> Tuple[Tuple, Tuple, ParallelRngHp]:
-    """Initialize parameters and hyperparameters for a layer that combines
-    sub-layers that may require PRNGKeys in parallel.
+) -> Tuple[Tuple, Tuple, Any]:
+    """Initialize parameters and hyperparameters for a block that combines
+    layers that may require PRNGKeys in parallel.
 
     :param layers: Initialized parameters and hyperparameters from each of the
-        sub-layers.
+        layers.
 
-    :returns trainables: Tuple of trainable weights from each of the sub-layers.
-    :returns non_trainables: Tuple of non-trainable weights from each of the 
-        sub-layers.
-    :returns hyperparams: ParallelRngHp instance.
+    :returns trainables: Named tuple of trainable weights from each of the
+        layers.
+    :returns non_trainables: Named tuple of non-trainable weights from each of
+        the layers.
+    :returns hyperparams: Named tuple of hyperparams from each of the layers.
     """
+    ParallelRng = namedtuple(
+        "ParallelRng",
+        (f"layer{i}" for i in range(len(layers)))
+    )
     trainables, non_trainables, hyperparams = zip(*layers)
-    return trainables, non_trainables, ParallelRngHp(hyperparams)
+    return (
+        ParallelRng(*trainables),
+        ParallelRng(*non_trainables),
+        ParallelRng(*hyperparams)
+    )
 
 def fwd(
     x: Any,
     trainables: Tuple,
     non_trainables: Tuple,
     key: Any,
-    hyperparams: ParallelRngHp,
+    hyperparams: Any,
     inference_mode: bool=False
 )  -> Tuple[Any, Tuple]:
     """Apply layers that may require PRNG keys in parallel.
 
     :param x: PyTree of input features for each of the layers.
-    :param trainables: Tuple of trainable weights from each of the layers.
-    :param non_trainables: Tuple of non-trainable weights from each of the
+    :param trainables: Named tuple of trainable weights from each of the
         layers.
+    :param non_trainables: Named tuple of non-trainable weights from each of
+        the layers.
     :param key: PRNG key.
-    :param hyperparams: ParallelRngHp instance.
+    :param hyperparams: Named tuple of hyperparams from each of the layers.
     :param inference_mode: Whether in inference or training mode. Default:
         False, training mode.
 
@@ -50,7 +57,7 @@ def fwd(
     """
     x, treedef = tree_util.tree_flatten(x)
 
-    fwds = tuple(map(_get_fwd, hyperparams.layers))
+    fwds = tuple(map(_get_fwd, hyperparams))
     needs_keys = tuple(map(_needs_key, fwds))
     n_keys = sum(needs_keys)
     if n_keys > 1:
@@ -72,7 +79,7 @@ def fwd(
     x, non_trainables = zip(*map(
         map_fn,
         zip(
-            x, trainables, non_trainables, hyperparams.layers, fwds, needs_keys
+            x, trainables, non_trainables, hyperparams, fwds, needs_keys
         )
     ))
 

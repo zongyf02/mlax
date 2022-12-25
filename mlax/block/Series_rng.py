@@ -4,34 +4,39 @@ from jax import (
 )
 from typing import Tuple, Union, Any
 from functools import reduce
-from mlax._utils import _get_fwd, _needs_key, _block_hyperparams
-
-@_block_hyperparams
-class SeriesRngHp:
-    layers: Tuple
+from collections import namedtuple
+from mlax._utils import _get_fwd, _needs_key, _is_nn_hyperparams
 
 def init(
     *layers
 ) -> Tuple[Union[Tuple, jax.Array], Union[Tuple, jax.Array], Any]:
-    """Initialize parameters and hyperparameters for a layer that applies
-    sub-layers that may consume a PRNG key in series.
+    """Initialize parameters and hyperparameters for a block that applies
+    layers that may consume a PRNG key in series.
 
     :param layers: Initialized parameters and hyperparameters from each of the
-        sub-layers.
+        layers.
 
-     :returns trainables: Tuple of trainable weights from each of the sub-layer
-        or trainables weights from the sub-layer if there's only one sub-layer.
-    :returns non_trainables: Tuple of non-trainable weights from each of the 
-        sub-layer or non-trainable weights from the sub-layer if there's only
-        one sub-layer.
-    :returns hyperparams: SeriesRngHp instance or hyperparam of the sub-layer if
-        there is only one sub-layer.
+    :returns trainables: Named tuple of trainable weights from each of the
+        layers or trainables weights from the layer if there's only one layer.
+    :returns non_trainables: Named tuple of non-trainable weights from each of
+        the layers or non-trainables weights from the layer if there's only one
+        layer.
+    :returns hyperparams: Named tuple of hyperparams from each of the layers or
+        hyperparams of the layer if there is only one layer.
     """
     if len(layers) <= 1:
         return layers[0]
     else:
+        SeriesRng = namedtuple(
+            "SeriesRng",
+            (f"layer{i}" for i in range(len(layers)))
+        )
         trainables, non_trainables, hyperparams = zip(*layers)
-        return trainables, non_trainables, SeriesRngHp(hyperparams)
+        return (
+            SeriesRng(*trainables),
+            SeriesRng(*non_trainables),
+            SeriesRng(*hyperparams)
+        )
 
 def fwd(
     x: jax.Array,
@@ -49,21 +54,21 @@ def fwd(
         ``series_rng_fwd`` when possible.
 
     :param x: Input features.
-    :param trainables: Tuple of trainable weights from each of the layers or
-        trainables weights from the layer if there's only one layer.
-    :param non_trainables: Tuple of non-trainable weights from each of the
-        layers or non-trainables weights from the layer if there's only one
+    :param trainables: Named tuple of trainable weights from each of the
+        layers or trainables weights from the layer if there's only one layer.
+    :param non_trainables: Named tuple of non-trainable weights from each of
+        the layers or non-trainables weights from the layer if there's only one
         layer.
     :param key: PRNG key.
-    :param hyperparams: SeriesRngHp instance or hyperparam of the layer if there
-        is only one layer.
+    :param hyperparams: Named tuple of hyperparams from each of the layers or
+        hyperparams of the layer if there is only one layer.
     :param inference_mode: Whether in inference or training mode. Default:
         False, training mode.
 
     :returns y: ``x`` with the layers applied.
     :returns non_trainables: Updated ``non_trainables``.
     """
-    if not isinstance(hyperparams, SeriesRngHp):
+    if _is_nn_hyperparams(hyperparams):
         fwd = _get_fwd(hyperparams)
         needs_key = _needs_key(fwd)
         if needs_key:
@@ -75,7 +80,7 @@ def fwd(
                 x, trainables, non_trainables, hyperparams, inference_mode
             )
     else:
-        fwds = tuple(map(_get_fwd, hyperparams.layers))
+        fwds = tuple(map(_get_fwd, hyperparams))
         needs_keys = tuple(map(_needs_key, fwds))
         n_keys = sum(needs_keys)
         if n_keys > 1:
@@ -99,7 +104,7 @@ def fwd(
 
         x = reduce(
             reduce_fn,
-            zip(trainables, non_trainables, hyperparams.layers, fwds, needs_keys),
+            zip(trainables, non_trainables, hyperparams, fwds, needs_keys),
             x
         )
         return x, tuple(new_ntrs)
