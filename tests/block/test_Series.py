@@ -14,8 +14,7 @@ inputs = jnp.ones((2, 3, 8, 8), dtype)
 trainables, non_trainables, hyperparams = Series.init(
     BatchNorm.init(
         next(keys_iter),
-        in_channels=3,
-        channel_axis=0
+        in_channels=3
     ),
     Bias.init(
         next(keys_iter),

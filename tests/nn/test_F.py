@@ -7,13 +7,13 @@ from jax import (
 )
 
 dtype = jnp.float16
-inputs = jnp.full((2, 4, 4), -1, dtype=dtype)
+inputs = jnp.full((2, 4, 4, 1), -1, dtype=dtype)
 trainables, non_trainables, hyperparams = F.init(
     lambda x: pool(
-        x, lax.convert_element_type(1, dtype), lax.mul, (1, 2, 2)
+        x, lax.convert_element_type(1, dtype), lax.mul, 2, 2, channel_last=True
     ),
     lambda x: pool(
-        x, lax.convert_element_type(2, dtype), lax.mul, (1, 2, 2)
+        x, lax.convert_element_type(2, dtype), lax.mul, 2, 2, channel_last=True
     )
 )
 
@@ -28,7 +28,7 @@ def test_fwd():
     )
     assert lax.eq(
         activations,
-        jnp.ones((2, 3, 3), dtype=dtype)
+        jnp.ones((2, 3, 3, 1), dtype=dtype)
     ).all()
     assert new_ntr is None 
 
@@ -37,6 +37,6 @@ def test_fwd():
     )
     assert lax.eq(
         activations,
-        jnp.full((2, 3, 3), 2, dtype=dtype)
+        jnp.full((2, 3, 3, 1), 2, dtype=dtype)
     ).all()
     assert new_ntr is None 

@@ -23,8 +23,7 @@ def _canon_int_sequence(int_or_seq, length):
 def _canon_opt_int_sequence(opt_int_or_seq, length):
     return (
         None if opt_int_or_seq is None else
-        (opt_int_or_seq,) * length if isinstance(opt_int_or_seq, int) else
-        tuple(opt_int_or_seq)
+        _canon_int_sequence(opt_int_or_seq, length)
     )
 
 def _canon_padding(padding, ndims):

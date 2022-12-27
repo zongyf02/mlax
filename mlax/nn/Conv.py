@@ -138,9 +138,7 @@ def init(
         (lhs_spec, kernel_spec, lhs_spec)
     )
 
-    filter_shape_iter = iter(
-        (filter_shape,) * ndims if isinstance(filter_shape, int) else filter_shape
-    )
+    filter_shape_iter = iter(_canon_int_sequence(filter_shape, ndims))
     kernel_weight = kernel_initializer(
         key,
         tuple(

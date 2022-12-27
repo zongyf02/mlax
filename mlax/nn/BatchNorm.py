@@ -10,14 +10,14 @@ from mlax._utils import _nn_hyperparams
 
 @_nn_hyperparams
 class BatchNormHp:
-    channel_axis: int
+    channel_last: bool
     epsilon: Any
     momentum: Any
 
 def init(
     key,
     in_channels: int,
-    channel_axis: int=0,
+    channel_last: bool=False,
     epsilon=1e-5,
     momentum=0.9,
     mean_initializer=nn.initializers.zeros,
@@ -28,7 +28,8 @@ def init(
 
     :param key: PRNG key for weight initialization.
     :param in_channels: Number of input feature dimensions/channels.
-    :param channel_axis: Axis of the channel dimension.
+    :param channel_last: Whether features are channel-last or first. Default:
+        False, channel-first.
     :param eps: Small number added to variance to avoid divisions by zero.
     :param momemtum: Momentum for the moving average.
     :param mean_initializer: Moving mean initializer as defined by
@@ -49,7 +50,7 @@ def init(
     moving_var = var_initializer(key2, (in_channels,), dtype)
 
     return None, (moving_mean, moving_var), BatchNormHp(
-        channel_axis,
+        channel_last,
         epsilon,
         momentum
     )
@@ -80,23 +81,21 @@ def fwd(
         If you wish to batch normalize without using a moving mean and variance
         in inference mode, simply use ``mlax.nn.F`` and ``jax.nn.standarize``.
     """
-    channel_axis = (
-        hyperparams.channel_axis + len(x.shape) if hyperparams.channel_axis < 0
-        else hyperparams.channel_axis + 1
-    )
+    x_shape = x.shape
+    channel_axis =  len(x_shape) - 1 if hyperparams.channel_last else 1
 
-    if inference_mode is True:
+    if inference_mode:
         mean, var = non_trainables
         mean = lax.convert_element_type(mean, x.dtype)
         var = lax.convert_element_type(var, x.dtype)
     else:
         # Compute mean and variance
         n_elems = lax.convert_element_type(
-            prod(tuple(d for i, d in enumerate(x.shape) if i != channel_axis)),
+            prod(tuple(d for i, d in enumerate(x_shape) if i != channel_axis)),
             x.dtype
         )
         reduce_dims = tuple(
-            i for i in range(len(x.shape)) if i != channel_axis
+            i for i in range(len(x_shape)) if i != channel_axis
         )
         mean = lax.div(
             lax.reduce(x, 0, lax.add, reduce_dims),
@@ -135,7 +134,7 @@ def fwd(
     return lax.mul(
         lax.sub(
             x,
-            lax.broadcast_in_dim(mean, x.shape, broadcast_dims)
+            lax.broadcast_in_dim(mean, x_shape, broadcast_dims)
         ),
         lax.broadcast_in_dim(
             lax.rsqrt(
@@ -146,6 +145,6 @@ def fwd(
                     )
                 )
             ),
-            x.shape, broadcast_dims 
+            x_shape, broadcast_dims 
         )
     ), non_trainables

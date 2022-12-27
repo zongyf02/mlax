@@ -9,9 +9,9 @@ from mlax._utils import (
     _canon_padding
 )
 from math import prod
-from typing import Any, Sequence, Union, Callable, Optional
+from typing import Any, Tuple, Sequence, Union, Callable, Optional
 
-def identity(x: jax.Array):
+def identity(x: jax.Array) -> jax.Array:
     """Identity function.
     
     :param x: Input features.
@@ -52,11 +52,13 @@ def pool(
     x: jax.Array,
     init_value: Any,
     reduce_fn: Callable[[Any, Any], Any],
-    window_shape: Sequence[int],
+    ndims: int,
+    window_shape: Union[int, Sequence[int]],
     strides: Union[int, Sequence[int]] = 1,
-    padding="VALID",
+    padding: Union[str, int, Sequence[Union[int, Tuple[int, int]]]] = "VALID",
     input_dilation: Optional[Union[int, Sequence[int]]] = None,
-    window_dilation: Optional[Union[int, Sequence[int]]] = None
+    window_dilation: Optional[Union[int, Sequence[int]]] = None,
+    channel_last: bool=False
 ) -> jax.Array:
     """Apply an arbitrary reduce function over poolings windows of input
         features.
@@ -65,11 +67,13 @@ def pool(
     :param init_value: Initial value of the reduce function over each pooling
         window.
     :param reduce_fn: Reduce function.
-    :param window_shape: Shape of the pooling window.
-    :param strides: An integer or sequence integers of the same length as
-        ``window_shape``, specifying the strides of the pooling window along the
-        window shape. A single integer specifies the same value for all window
-        dimensions. Default: 1.
+    :param ndims: Number of input spatial dimensions.
+    :param window_shape: An integer or a sequence of ``ndims`` integers,
+        specifying the shape of the pooling window used on input features. A
+        single integer specifies the same value for all spatial dimensions.
+    :param strides: An integer or a sequence of ``ndims`` integers, specifying
+        the strides of the window shape along the spatial dimensions. A single
+        integer specifies the same value for all spatial dimensions. Default: 1.
     :param padding: String, integer, or a sequence of `ndims` integers or
         integer tuple pairs that give the padding to apply before and after
         each spatial dimension. If integer, the same padding is applied before
@@ -84,36 +88,77 @@ def pool(
     :param window_dilation: None, an integer, or a sequence of ``ndims``
         integers, specifying the window dilation rate in each spatial dimension.
         See the ``window_dilation`` parameter of `jax.lax.reduce_window`_.
-        Default: None, no window dilation. 
+        Default: None, no window dilation.
+    :param channel_last: Whether features are channel-last or first. Default:
+        False, channel-first.
     
     :returns y: x with pooling applied.
     
     .. _jax.lax.reduce_window:
         https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.reduce_window.html
     """
-    window_ndims = len(window_shape)
+    window_shape = _canon_int_sequence(window_shape, ndims)
+    strides = _canon_int_sequence(strides, ndims)
+    padding = _canon_padding(padding, ndims)
+    input_dilation = _canon_opt_int_sequence(input_dilation, ndims)
+    window_dilation = _canon_opt_int_sequence(window_dilation, ndims)
+
+    if channel_last:
+        window_shape = (1, *window_shape, 1)
+        strides = (1, *strides, 1)
+        padding = (
+            ((0, 0), *padding, (0, 0)) if isinstance(padding, tuple) else
+            padding
+        )
+        input_dilation = (
+            (1, *input_dilation, 1) if isinstance(input_dilation, tuple) else
+            input_dilation
+        )
+        window_dilation = (
+            (1, *window_dilation, 1) if isinstance(window_dilation, tuple) else
+            window_dilation
+        )
+    else:
+        window_shape = (1, 1, *window_shape)
+        strides = (1, 1, *strides)
+        padding = (
+            ((0, 0), (0, 0), *padding) if isinstance(padding, tuple) else
+            padding
+        )
+        input_dilation = (
+            (1, 1, *input_dilation) if isinstance(input_dilation, tuple) else
+            input_dilation
+        )
+        window_dilation = (
+            (1, 1, *window_dilation) if isinstance(window_dilation, tuple) else
+            window_dilation
+        )
+
     return lax.reduce_window(
         x,
         init_value,
         reduce_fn,
         window_shape,
-        _canon_int_sequence(strides, window_ndims),
-        _canon_padding(padding, window_ndims),
-        _canon_opt_int_sequence(input_dilation, window_ndims),
-        _canon_opt_int_sequence(window_dilation, window_ndims)
+        strides,
+        padding,
+        input_dilation,
+        window_dilation
     )
 
 def max_pool(
     x: jax.Array,
-    window_shape: Sequence[int],
+    ndims: int,
+    window_shape: Union[int, Sequence[int]],
     strides: Union[int, Sequence[int]] = 1,
-    padding="VALID",
-    input_dilation=None,
-    window_dilation=None
+    padding: Union[str, int, Sequence[Union[int, Tuple[int, int]]]] = "VALID",
+    input_dilation: Optional[Union[int, Sequence[int]]] = None,
+    window_dilation: Optional[Union[int, Sequence[int]]] = None,
+    channel_last: bool=False
 ) -> jax.Array:
     """Apply max pooling over input features.
 
     :param x: Input features to the max pooling transform.
+    :param ndims: Number of input spatial dimensions.
     :param window_shape: See the ``window_shape`` parameter of ``pooling``.
     :param strides: See the ``strides`` parameter of ``pooling``. Default: 1.
     :param padding: See the ``padding`` parameter of ``pooling``.
@@ -121,6 +166,8 @@ def max_pool(
         Default: None, no input dilation.
     :param window_dilation: See the ``window_dilation`` parameter of
         ``pooling``. Default: None, no window dilation.
+    :param channel_last: Whether features are channel-last or first. Default:
+        False, channel-first.
     
     :returns y: x with max pooling applied.
     """
@@ -128,24 +175,29 @@ def max_pool(
         x,
         -jax.numpy.inf,
         lax.max,
+        ndims,
         window_shape,
         strides,
         padding,
         input_dilation,
-        window_dilation
+        window_dilation,
+        channel_last
     )
 
 def sum_pool(
     x: jax.Array,
-    window_shape: Sequence[int],
+    ndims: int,
+    window_shape: Union[int, Sequence[int]],
     strides: Union[int, Sequence[int]] = 1,
-    padding="VALID",
-    input_dilation=None,
-    window_dilation=None
+    padding: Union[str, int, Sequence[Union[int, Tuple[int, int]]]] = "VALID",
+    input_dilation: Optional[Union[int, Sequence[int]]] = None,
+    window_dilation: Optional[Union[int, Sequence[int]]] = None,
+    channel_last: bool=False
 ) -> jax.Array:
     """Apply sum pooling over input features.
 
     :param x: Input features to the sum pooling transform.
+    :param ndims: Number of input spatial dimensions.
     :param window_shape: See the ``window_shape`` parameter of ``pooling``.
     :param strides: See the ``strides`` parameter of ``pooling``. Default: 1.
     :param padding: See the ``padding`` parameter of ``pooling``.
@@ -153,6 +205,8 @@ def sum_pool(
         Default: None, no input dilation.
     :param window_dilation: See the ``window_dilation`` parameter of
         ``pooling``. Default: None, no window dilation.
+    :param channel_last: Whether features are channel-last or first. Default:
+        False, channel-first.
     
     :returns y: x with sum pooling applied.
     """
@@ -160,24 +214,29 @@ def sum_pool(
         x,
         0,
         lax.add,
+        ndims,
         window_shape,
         strides,
         padding,
         input_dilation,
-        window_dilation
+        window_dilation,
+        channel_last
     )
 
 def avg_pool(
     x: jax.Array,
-    window_shape: Sequence[int],
+    ndims: int,
+    window_shape: Union[int, Sequence[int]],
     strides: Union[int, Sequence[int]] = 1,
-    padding="VALID",
-    input_dilation=None,
-    window_dilation=None
+    padding: Union[str, int, Sequence[Union[int, Tuple[int, int]]]] = "VALID",
+    input_dilation: Optional[Union[int, Sequence[int]]] = None,
+    window_dilation: Optional[Union[int, Sequence[int]]] = None,
+    channel_last: bool=False
 ) -> jax.Array:
     """Apply average pooling over input features.
 
     :param x: Input features to the avg pooling transform.
+    :param ndims: Number of input spatial dimensions.
     :param window_shape: See the ``window_shape`` parameter of ``pooling``.
     :param strides: See the ``strides`` parameter of ``pooling``. Default: 1.
     :param padding: See the ``padding`` parameter of ``pooling``.
@@ -185,6 +244,8 @@ def avg_pool(
         Default: None, no input dilation.
     :param window_dilation: See the ``window_dilation`` parameter of
         ``pooling``. Default: None, no window dilation.
+    :param channel_last: Whether features are channel-last or first. Default:
+        False, channel-first.
  
     :returns y: x with average pooling applied.
     """
@@ -192,13 +253,19 @@ def avg_pool(
         x,
         0,
         lax.add,
+        ndims,
         window_shape,
         strides,
         padding,
         input_dilation,
-        window_dilation
+        window_dilation,
+        channel_last
+    )
+    n_window_elems = (
+        prod(window_shape) if isinstance(window_shape, tuple) else
+        window_shape**ndims
     )
     return lax.div(
         activations,
-        lax.convert_element_type(prod(window_shape), activations.dtype)
+        lax.convert_element_type(n_window_elems, activations.dtype)
     )
