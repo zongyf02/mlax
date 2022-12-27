@@ -1,5 +1,6 @@
 from mlax.nn import F
 from mlax.functional import pool
+from common import assert_valid_pytree
 import jax.numpy as jnp
 from jax import (
     lax,
@@ -18,6 +19,7 @@ trainables, non_trainables, hyperparams = F.init(
 )
 
 def test_init():
+    assert_valid_pytree(trainables, non_trainables, hyperparams)
     assert trainables is None
     assert non_trainables is None
 

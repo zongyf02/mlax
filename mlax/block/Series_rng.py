@@ -5,7 +5,7 @@ from jax import (
 from typing import Tuple, Union, Any
 from functools import reduce
 from collections import namedtuple
-from mlax._utils import _get_fwd, _needs_key, _is_nn_hyperparams
+from mlax._utils import _get_fwd, _needs_key
 
 def init(
     *layers
@@ -68,18 +68,7 @@ def fwd(
     :returns y: ``x`` with the layers applied.
     :returns non_trainables: Updated ``non_trainables``.
     """
-    if _is_nn_hyperparams(hyperparams):
-        fwd = _get_fwd(hyperparams)
-        needs_key = _needs_key(fwd)
-        if needs_key:
-            return fwd(
-                x, trainables, non_trainables, key, hyperparams, inference_mode
-            )
-        else:
-            return fwd(
-                x, trainables, non_trainables, hyperparams, inference_mode
-            )
-    else:
+    if isinstance(hyperparams, tuple):
         fwds = tuple(map(_get_fwd, hyperparams))
         needs_keys = tuple(map(_needs_key, fwds))
         n_keys = sum(needs_keys)
@@ -107,4 +96,15 @@ def fwd(
             zip(trainables, non_trainables, hyperparams, fwds, needs_keys),
             x
         )
-        return x, tuple(new_ntrs)
+        return x, non_trainables.__class__(*new_ntrs)
+    else:
+        fwd = _get_fwd(hyperparams)
+        needs_key = _needs_key(fwd)
+        if needs_key:
+            return fwd(
+                x, trainables, non_trainables, key, hyperparams, inference_mode
+            )
+        else:
+            return fwd(
+                x, trainables, non_trainables, hyperparams, inference_mode
+            )

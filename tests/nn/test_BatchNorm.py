@@ -1,4 +1,5 @@
 from mlax.nn import BatchNorm
+from common import assert_valid_pytree
 import jax.numpy as jnp
 from jax import (
     random,
@@ -25,6 +26,9 @@ trainables2, non_trainables2, hyperparams2 = BatchNorm.init(
 )
 
 def test_init():
+    assert_valid_pytree(trainables1, non_trainables1, hyperparams1)
+    assert_valid_pytree(trainables2, non_trainables2, hyperparams2)
+
     moving_mean, moving_variance = non_trainables1
     assert lax.eq(
         moving_mean,
@@ -53,16 +57,18 @@ def test_fwd():
         static_argnames=["hyperparams", "inference_mode"]
     )
 
-    activations, (moving_mean, moving_var)  = fwd_fn(
+    activations, ntr  = fwd_fn(
         inputs1,
         trainables1, non_trainables1, hyperparams1,
         inference_mode=False
     )
+    moving_mean, moving_var = ntr
     assert lax.eq(
         activations,
         nn.standardize(inputs1, (0, 1, 2))
     ).all()
-    
+    non_trainables1.__class__ == ntr.__class__    
+
     assert lax.eq(
         moving_mean,
         inputs1.mean((0, 1, 2), dtype=op_dtype).astype(dtype) * 0.1
@@ -78,7 +84,7 @@ def test_fwd():
         )) < 1e-6
     ).all()
 
-    activations, _ = fwd_fn(
+    activations, ntr = fwd_fn(
         inputs1,
         trainables1, non_trainables1, hyperparams1,
         inference_mode=True
@@ -86,16 +92,19 @@ def test_fwd():
     assert (
        lax.abs(lax.sub(activations, inputs1)) < 1e-4
     ).all()
+    non_trainables1.__class__ == ntr.__class__ 
 
-    activations, (moving_mean, moving_var)  = fwd_fn(
+    activations, ntr  = fwd_fn(
         inputs2,
         trainables2, non_trainables2, hyperparams2,
         inference_mode=False
     )
+    moving_mean, moving_var = ntr
     assert lax.eq(
         activations,
         nn.standardize(inputs2, (0, 2, 3))
     ).all()
+    non_trainables2.__class__ == ntr.__class__ 
     
     assert lax.eq(
         moving_mean,
@@ -112,7 +121,7 @@ def test_fwd():
         )) < 1e-6
     ).all()
     
-    activations, _ = fwd_fn(
+    activations, ntr = fwd_fn(
         inputs2,
         trainables2, non_trainables2, hyperparams2,
         inference_mode=True
@@ -120,3 +129,4 @@ def test_fwd():
     assert (
        lax.abs(lax.sub(activations, inputs2)) < 1e-4
     ).all()
+    non_trainables2.__class__ == ntr.__class__ 

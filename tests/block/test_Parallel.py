@@ -1,5 +1,6 @@
 from mlax.nn import Conv, Scaler, F
 from mlax.block import Parallel
+from common import assert_valid_pytree
 import jax.numpy as jnp
 from jax import (
     random,
@@ -35,20 +36,21 @@ trainables, non_trainables, hyperparams = Parallel.init(
     )
 )
 
+def test_init():
+    assert_valid_pytree(trainables, non_trainables, hyperparams)
+
 def test_fwd():
     fwd = jit(Parallel.fwd, static_argnames=["hyperparams", "inference_mode"])
+    conv_acts_ref = jnp.full((2, 6, 6, 4), 27, dtype)
+    scaler_acts_ref = jnp.ones((2, 4), dtype)
 
-    activations, _ = fwd(
+    activations, ntr = fwd(
         inputs, trainables, non_trainables, hyperparams, False
     )
-
-    conv_acts_ref = jnp.full((2, 6, 6, 4), 27, dtype)
     assert lax.eq(
         activations[0],
         conv_acts_ref
     ).all()
-
-    scaler_acts_ref = jnp.ones((2, 4), dtype)
     assert lax.eq(
         activations[1],
         scaler_acts_ref
@@ -57,8 +59,9 @@ def test_fwd():
         activations[2],
         inputs[2]
     ).all()
+    non_trainables.__class__ == ntr.__class__
 
-    activations, _ = fwd(
+    activations, ntr = fwd(
         inputs, trainables, non_trainables, hyperparams, True
     )
     assert lax.eq(
@@ -70,3 +73,4 @@ def test_fwd():
         scaler_acts_ref
     ).all()
     assert activations[2] == 0
+    non_trainables.__class__ == ntr.__class__

@@ -1,4 +1,5 @@
 from mlax.nn import Linear
+from common import assert_valid_pytree
 import jax.numpy as jnp
 from jax import (
     random,
@@ -21,6 +22,7 @@ trainables, non_trainables, hyperparams = Linear.init(
 )
 
 def test_init():
+    assert_valid_pytree(trainables, non_trainables, hyperparams)
     assert lax.eq(
         trainables,
         jnp.ones((3, 4), dtype)

@@ -1,4 +1,5 @@
 from mlax.functional import dropout
+from common import assert_valid_pytree
 from mlax.nn import F_rng
 import jax.numpy as jnp
 from jax import (
@@ -15,6 +16,7 @@ trainables, non_trainables, hyperparams = F_rng.init(
 )
 
 def test_init():
+    assert_valid_pytree(trainables, non_trainables, hyperparams)
     assert trainables is None
     assert non_trainables is None
 

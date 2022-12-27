@@ -42,6 +42,3 @@ def _needs_key(fwd):
     return signature(fwd).parameters.__contains__("key")
 
 _nn_hyperparams = dataclass(frozen=True, slots=True)
-
-def _is_nn_hyperparams(obj):
-    return is_dataclass(obj) and not isinstance(obj, type)

@@ -2,7 +2,7 @@ import jax
 from typing import Tuple, Union, Any
 from functools import reduce
 from collections import namedtuple
-from mlax._utils import _get_fwd, _is_nn_hyperparams
+from mlax._utils import _get_fwd
 
 def init(
     *layers: Tuple
@@ -58,11 +58,7 @@ def fwd(
     :returns y: ``x`` with the layers applied in series.
     :returns non_trainables: Updated ``non_trainables``.
     """
-    if _is_nn_hyperparams(hyperparams):
-        return _get_fwd(hyperparams)(
-            x, trainables, non_trainables, hyperparams, inference_mode
-        )
-    else:
+    if isinstance(hyperparams, tuple):
         new_ntrs=[]
         def reduce_fn(x, params):
             tr, ntr, hp = params
@@ -77,4 +73,8 @@ def fwd(
             zip(trainables, non_trainables, hyperparams),
             x
         )
-        return x, tuple(new_ntrs)
+        return x, non_trainables.__class__(*new_ntrs)
+    else:
+        return _get_fwd(hyperparams)(
+            x, trainables, non_trainables, hyperparams, inference_mode
+        )

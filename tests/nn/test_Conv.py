@@ -1,4 +1,5 @@
 from mlax.nn import Conv
+from common import assert_valid_pytree
 import jax.numpy as jnp
 from jax import (
     random,
@@ -45,6 +46,9 @@ trainables2, non_trainables2, hyperparams2 = Conv.init(
 )
 
 def test_init():
+    assert_valid_pytree(trainables1, non_trainables1, hyperparams1)
+    assert_valid_pytree(trainables2, non_trainables2, hyperparams2)
+
     assert lax.eq(
         trainables1,
         jnp.ones((16, 3, 5, 5), dtype)

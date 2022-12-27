@@ -60,9 +60,11 @@ def fwd(
             x, tr, ntr, hp, inference_mode
         )
 
-    x, non_trainables = zip(*map(
+    x, new_ntr = zip(*map(
         map_fn,
         zip(x, trainables, non_trainables, hyperparams)
     ))
 
-    return tree_util.tree_unflatten(treedef, x), non_trainables
+    return (
+        tree_util.tree_unflatten(treedef, x), non_trainables.__class__(*new_ntr)
+    )
