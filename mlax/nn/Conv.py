@@ -106,7 +106,7 @@ def init(
         If you override either ``kernel_in_axis`` or ``kernel_out_axis``, also
         override the default ``kernel_initializer`` to have matching
         ``in_axis`` and ``out_axis``.
-    
+
     .. _jax.lax.conv_general_dilated:
         https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv_general_dilated.html
     """
@@ -171,8 +171,8 @@ def fwd(
 ) -> jax.Array:
     """Applies convolutions on input features.
 
-    :param x: Input features to the convolutional layer. Must be of ``dtype``
-        and compatible with ``channel_last``.
+    :param x: Batched input features to the convolutional layer. Must be of
+        ``dtype`` and compatible with ``channel_last``.
     :param trainables: Trainable weights for a convolutional layer.
     :param non_trainables: Non-trainable weights for a convolutional layer,
         should be None. Ignored.

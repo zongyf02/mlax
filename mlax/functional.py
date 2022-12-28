@@ -6,7 +6,11 @@ from jax import (
 from mlax._utils import (
     _canon_int_sequence,
     _canon_opt_int_sequence,
-    _canon_padding
+    _canon_padding,
+    _n_elems,
+    _mean,
+    _variance,
+    _normalize
 )
 from math import prod
 from typing import Any, Tuple, Sequence, Union, Callable, Optional
@@ -63,7 +67,8 @@ def pool(
     """Apply an arbitrary reduce function over poolings windows of input
         features.
 
-    :param x: Input features to the pooling transform.
+    :param x: Batched input features to the avg pooling transform. Must be
+        compatible with ``channel_last``.
     :param init_value: Initial value of the reduce function over each pooling
         window.
     :param reduce_fn: Reduce function.
@@ -157,7 +162,8 @@ def max_pool(
 ) -> jax.Array:
     """Apply max pooling over input features.
 
-    :param x: Input features to the max pooling transform.
+    :param x: Batched input features to the avg pooling transform. Must be
+        compatible with ``channel_last``.
     :param ndims: Number of input spatial dimensions.
     :param window_shape: See the ``window_shape`` parameter of ``pooling``.
     :param strides: See the ``strides`` parameter of ``pooling``. Default: 1.
@@ -196,7 +202,8 @@ def sum_pool(
 ) -> jax.Array:
     """Apply sum pooling over input features.
 
-    :param x: Input features to the sum pooling transform.
+    :param x: Batched input features to the avg pooling transform. Must be
+        compatible with ``channel_last``.
     :param ndims: Number of input spatial dimensions.
     :param window_shape: See the ``window_shape`` parameter of ``pooling``.
     :param strides: See the ``strides`` parameter of ``pooling``. Default: 1.
@@ -235,7 +242,8 @@ def avg_pool(
 ) -> jax.Array:
     """Apply average pooling over input features.
 
-    :param x: Input features to the avg pooling transform.
+    :param x: Batched input features to the avg pooling transform. Must be
+        compatible with ``channel_last``.
     :param ndims: Number of input spatial dimensions.
     :param window_shape: See the ``window_shape`` parameter of ``pooling``.
     :param strides: See the ``strides`` parameter of ``pooling``. Default: 1.
@@ -268,4 +276,96 @@ def avg_pool(
     return lax.div(
         activations,
         lax.convert_element_type(n_window_elems, activations.dtype)
+    )
+
+def layer_norm(x, epsilon=1e-05):
+    """Apply layer normalization.
+
+    :param x: Batched input features to layer norm, either in channel-first or
+        channel-last format.
+    :param epsilon: Small number added to variance to avoid divisions by zero.
+        Default: 1e-05.
+    
+    :returns: ``x`` with layer normalization applied.
+    """
+    reduce_dims = range(1, len(x.shape))
+    n_elems = _n_elems(x, reduce_dims)
+    mean = _mean(x, reduce_dims, n_elems)
+    variance = _variance(x, reduce_dims, n_elems, mean)
+    return _normalize(x, (0,), epsilon, mean, variance)
+
+def instance_norm(x, channel_last=False, epsilon=1e-05):
+    """Apply instance normalization.
+
+    :param x: Batched input features to layer norm. Must be compatible with
+        ``channel_last``.
+    :param channel_last: Whether features are channel-last or first. Default:
+        False, channel-first.
+    :param epsilon: Small number added to variance to avoid divisions by zero.
+        Default: 1e-05.
+    
+    :returns: ``x`` with instance normalization applied.
+    """
+    _ndims = len(x.shape)
+    if channel_last:
+        reduce_dims = range(1, _ndims - 1)
+        broadcast_dims = (0, _ndims - 1)
+    else:
+        reduce_dims = range(2, _ndims)
+        broadcast_dims = (0, 1)
+
+    n_elems = _n_elems(x, reduce_dims)
+    mean = _mean(x, reduce_dims, n_elems)
+    variance = _variance(x, reduce_dims, n_elems, mean)
+    return _normalize(
+        x,
+        broadcast_dims,
+        epsilon,
+        mean,
+        variance
+    )
+
+def group_norm(x, num_groups, channel_last=False, epsilon=1e-05):
+    """Apply group normalization.
+
+    :param x: Batched input features to layer norm. Must be compatible with
+        ``channel_last``.
+    :param num_groups: Number of groups to split the channels into. Must divide
+        the number of channels in ``x``.
+    :param channel_last: Whether features are channel-last or first. Default:
+        False, channel-first.
+    :param epsilon: Small number added to variance to avoid divisions by zero.
+        Default: 1e-05.
+    
+    :returns: ``x`` with group normalization applied.
+    """
+    x_shape = x.shape
+    _ndims = len(x_shape)
+    if channel_last:
+        num_channels = x_shape[-1]
+        x = lax.reshape(
+            x, (*x_shape[:-1], num_groups, num_channels//num_groups)
+        )
+        reduce_dims = (*range(1, _ndims - 1), _ndims)
+        broadcast_dims = (0, _ndims - 1)
+    else:
+        num_channels = x_shape[1]
+        x = lax.reshape(
+            x, (x_shape[0], num_groups, num_channels//num_groups, *x_shape[2:])
+        )
+        reduce_dims = range(2, _ndims + 1)
+        broadcast_dims = (0, 1)
+    
+    n_elems = _n_elems(x, reduce_dims)
+    mean = _mean(x, reduce_dims, n_elems)
+    variance = _variance(x, reduce_dims, n_elems, mean)
+    return lax.reshape(
+        _normalize(
+            x,
+            broadcast_dims,
+            epsilon,
+            mean,
+            variance
+        ),
+        x_shape
     )

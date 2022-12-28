@@ -1,7 +1,8 @@
-from jax import lax, tree_util
+from jax import lax
+from math import prod
 import sys
 from inspect import signature
-from dataclasses import dataclass, is_dataclass
+from dataclasses import dataclass
 
 def _canon_precision(precision):
     if precision is None or isinstance(precision, lax.Precision):
@@ -42,3 +43,46 @@ def _needs_key(fwd):
     return signature(fwd).parameters.__contains__("key")
 
 _nn_hyperparams = dataclass(frozen=True, slots=True)
+
+def _n_elems(x, reduce_dims):
+    return lax.convert_element_type(
+        prod(d for i, d in enumerate(x.shape) if i in reduce_dims),
+        x.dtype
+    )
+
+def _mean(x, reduce_dims, n_elems):
+    return lax.div(
+        lax.reduce(x, 0, lax.add, reduce_dims),
+        n_elems
+    )
+
+def _variance(x, reduce_dims, n_elems, mean):
+    return lax.sub(
+        lax.div(
+            lax.reduce(
+                lax.integer_pow(x, 2), # integer_pow not in lax docs
+                0, lax.add, reduce_dims
+            ),
+            n_elems
+        ),
+        lax.integer_pow(mean, 2)
+    )
+
+def _normalize(x, broadcast_dims, eps, mean, variance):
+    return lax.mul(
+        lax.sub(
+            x,
+            lax.broadcast_in_dim(mean, x.shape, broadcast_dims)
+        ),
+        lax.broadcast_in_dim(
+            lax.rsqrt(
+                lax.add(
+                    variance,
+                    lax.convert_element_type(
+                        eps, x.dtype
+                    )
+                )
+            ),
+            x.shape, broadcast_dims 
+        )
+    )
