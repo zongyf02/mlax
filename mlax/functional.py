@@ -306,12 +306,12 @@ def instance_norm(x, channel_last=False, epsilon=1e-05):
     
     :returns: ``x`` with instance normalization applied.
     """
-    _ndims = len(x.shape)
+    in_ndims = len(x.shape)
     if channel_last:
-        reduce_dims = range(1, _ndims - 1)
-        broadcast_dims = (0, _ndims - 1)
+        reduce_dims = range(1, in_ndims - 1)
+        broadcast_dims = (0, in_ndims - 1)
     else:
-        reduce_dims = range(2, _ndims)
+        reduce_dims = range(2, in_ndims)
         broadcast_dims = (0, 1)
 
     n_elems = _n_elems(x, reduce_dims)
@@ -340,20 +340,20 @@ def group_norm(x, num_groups, channel_last=False, epsilon=1e-05):
     :returns: ``x`` with group normalization applied.
     """
     x_shape = x.shape
-    _ndims = len(x_shape)
+    in_ndims = len(x_shape)
     if channel_last:
         num_channels = x_shape[-1]
         x = lax.reshape(
             x, (*x_shape[:-1], num_groups, num_channels//num_groups)
         )
-        reduce_dims = (*range(1, _ndims - 1), _ndims)
-        broadcast_dims = (0, _ndims - 1)
+        reduce_dims = (*range(1, in_ndims - 1), in_ndims)
+        broadcast_dims = (0, in_ndims - 1)
     else:
         num_channels = x_shape[1]
         x = lax.reshape(
             x, (x_shape[0], num_groups, num_channels//num_groups, *x_shape[2:])
         )
-        reduce_dims = range(2, _ndims + 1)
+        reduce_dims = range(2, in_ndims + 1)
         broadcast_dims = (0, 1)
     
     n_elems = _n_elems(x, reduce_dims)
