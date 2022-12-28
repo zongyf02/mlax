@@ -39,8 +39,6 @@ trainables2, non_trainables2, hyperparams2 = Conv.init(
     channel_last=True,
     precision=None,
     accum_dtype=dtype,
-    kernel_in_axis=-1,
-    kernel_out_axis=0, # OHWI kernel layout
     kernel_initializer=nn.initializers.constant(1, dtype=jnp.bfloat16),
     dtype=dtype
 )

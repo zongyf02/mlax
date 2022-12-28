@@ -42,9 +42,7 @@ def init(
     channel_last: bool=False,
     precision=None,
     accum_dtype=None,
-    kernel_in_axis: int=1,
-    kernel_out_axis: int=0,
-    kernel_initializer=nn.initializers.glorot_uniform(in_axis=1, out_axis=0),
+    kernel_initializer=nn.initializers.glorot_uniform(),
     dtype=None
 ) -> Tuple[jax.Array, None, ConvHp]:
     """Intialize parameters and hyperparameters for a convolutional layer.
@@ -84,10 +82,6 @@ def init(
         `jax.lax.conv_general_dilated`_. Default: None.
     :param accum_dtype: See the ``preferred_element_type`` parameter of
         `jax.lax.conv_general_dilated`_. Default: None.
-    :param kernel_in_axis: The axis of the kernel containing the input channels.
-        Default: 1.
-    :param kernel_out_axis: The axis of the kernel containing the ouput
-        channels. Default: 0.
     :param kernel_initializer: Kernel initializer as defined by
         ``jax.nn.initalizers <https://jax.readthedocs.io/en/latest/jax.nn.initializers.html>``.
         Default:: glorot uniform.
@@ -110,44 +104,35 @@ def init(
     .. _jax.lax.conv_general_dilated:
         https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv_general_dilated.html
     """
-    chars = tuple(str(i) for i in range(ndims))
-    if channel_last:
-        lhs_spec = reduce(add, chars, "N") + "C" # N...C
-    else:
-        lhs_spec = reduce(add, chars, "NC") # NC...
-
-    in_ndims = ndims + 2
-    kernel_in_axis, kernel_out_axis = (
-        kernel_in_axis + in_ndims if kernel_in_axis < 0 else kernel_in_axis,
-        kernel_out_axis + in_ndims if kernel_out_axis < 0 else kernel_out_axis
-    )
-    chars_iter = iter(chars)
-    kernel_spec = reduce(
-        add,
-        (
-            "I" if i == kernel_in_axis else
-            "O" if i == kernel_out_axis else
-            next(chars_iter) for i in range(in_ndims)
-        ),
-        ""
-    )
-
-    dummy_shape = (None,) * in_ndims
-    dimension_numbers = lax.conv_dimension_numbers(
-        dummy_shape, dummy_shape,
-        (lhs_spec, kernel_spec, lhs_spec)
-    )
-
-    filter_shape_iter = iter(_canon_int_sequence(filter_shape, ndims))
+    filter_shape = _canon_int_sequence(filter_shape, ndims)
     kernel_weight = kernel_initializer(
         key,
-        tuple(
-            out_channels if c == "O" else
-            in_channels if c == "I" else
-            next(filter_shape_iter) for c in kernel_spec
-        ),
+        (*filter_shape, in_channels, out_channels),
         dtype
     )
+
+    chars = tuple(str(i) for i in range(ndims))
+    if channel_last:
+        io_spec = reduce(add, chars, "N") + "C" # N...C
+        kernel_spec = reduce(add, chars, "O") + "I" # O...I
+        kernel_weight = lax.transpose(
+            kernel_weight,
+            (ndims+1, *range(ndims), ndims)
+        )
+    else:
+        io_spec = reduce(add, chars, "NC") # NC...
+        kernel_spec = reduce(add, chars, "OI") # OI...
+        kernel_weight = lax.transpose(
+            kernel_weight,
+            (ndims+1, ndims, *range(ndims))
+        )
+
+    dummy_shape = (None,) * (ndims + 2)
+    dimension_numbers = lax.conv_dimension_numbers(
+        dummy_shape, dummy_shape,
+        (io_spec, kernel_spec, io_spec)
+    )
+
     hyperparams = ConvHp(
         _canon_int_sequence(strides, ndims),
         _canon_padding(padding, ndims),

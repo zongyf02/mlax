@@ -23,7 +23,7 @@ def init(
     precision=None,
     accum_dtype=None,
     transposed_kernel=False,
-    kernel_initializer=nn.initializers.glorot_uniform(in_axis=0, out_axis=1),
+    kernel_initializer=nn.initializers.glorot_uniform(),
     dtype=None
 ) -> Tuple[jax.Array, None, LinearHp]:
     """Intialize parameters and hyperparameters for a linear layer.
@@ -49,21 +49,15 @@ def init(
     :returns trainables: Initialized kernel weight.
     :returns non_trainables: None.
     :returns hyperparams: LinearHp instance.
-    
-    .. note:
-        If you override ``kernel_out_axis_first``, also override the default
-        ``kernel_initializer`` to have  ``in_axis=1`` and ``out_axis=0``.
     """
-    kernel_shape = (
-        out_features, in_features
-    ) if transposed_kernel else (
-        in_features, out_features
-    )
     kernel_weight = kernel_initializer(
         key,
-        kernel_shape,
+        (in_features, out_features),
         dtype 
     )
+    if transposed_kernel:
+        kernel_weight = lax.transpose(kernel_weight, (1, 0))
+
     hyperparams = LinearHp(
         transposed_kernel,
         _canon_precision(precision),
