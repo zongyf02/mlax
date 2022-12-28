@@ -92,12 +92,11 @@ on both a CPU and CUDA backend, I found that reshaping the input to 2D prior
 to computation and then reshaping the 2D output post-computation gave better
 performance than simply using ``jax.lax.dot_general`` directly on the inputs.
 
-What are the optimal convolution kernel layouts?
-------------------------------------------------
-For channel-first (NCHW), the kernel layout should be OIHW. For channel-last
-(NHWC), the kernel layout should be OHWI. Basically, the input batch axis is
-replaced by the ouput channel axis in the kernel, and the input channel axis
-remains the same.
+Convolution kernel layouts.
+---------------------------
+For channel-first (NCHW), the kernel layout is OIHW. For channel-last (NHWC),
+the kernel layout is OHWI. Basically, the input batch axis is replaced by the
+output channel axis in the kernel, and the input channel axis remains the same.
 
 AFAIK, this differs from Tensorflow, where the kernel layout is HWOI for both
 channel-first and channel-last inputs. mlax doesn't do that is because there
