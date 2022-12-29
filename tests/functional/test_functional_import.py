@@ -10,3 +10,6 @@ def test_import():
     assert hasattr(functional, "layer_norm")
     assert hasattr(functional, "instance_norm")
     assert hasattr(functional, "group_norm")
+    assert hasattr(functional, "dot_product_attention_logits")
+    assert hasattr(functional, "apply_attention_mask")
+    assert hasattr(functional, "apply_attention_weights")

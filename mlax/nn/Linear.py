@@ -76,7 +76,7 @@ def fwd(
     """Apply linear transformation without bias to input features.
 
     :param x: Input features to the linear layer. Must be of ``dtype`` and of
-        the shape ``(n_batches, in_features)``.
+        the shape ``(batch, in_features)``.
     :param trainables: Trainable weights for a linear layer.
     :param non_trainables: Non-trainable weights for a linear layer, should
         be None. Ignored.
@@ -85,7 +85,7 @@ def fwd(
         Default: False.
 
     :returns y: ``x`` with linear transformation applied. Shape
-        ``(n_batches, out_features)``.
+        ``(batch, out_features)``.
     :returns non_trainables: None.
     """
     contracting_dims = (1,) if hyperparams.transposed_kernel else (0,)

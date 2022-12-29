@@ -57,7 +57,7 @@ def fwd(
     """Scale input features.
 
     :param x: Input features to the scaler layer. Must be of ``dtype`` and of
-        the shape as ``(n_batches, *in_feature_shape)``.
+        the shape as ``(batch, *in_feature_shape)``.
     :param trainables: Trainable weights for a scaler layer.
     :param non_trainables: Non-trainable weights for a scaler layer, should
         be None. Ignored.

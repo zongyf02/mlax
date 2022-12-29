@@ -12,7 +12,7 @@ from mlax._utils import (
     _variance,
     _normalize
 )
-from math import prod
+from math import prod, sqrt
 from typing import Any, Tuple, Sequence, Union, Callable, Optional
 
 def identity(x: jax.Array) -> jax.Array:
@@ -369,3 +369,67 @@ def group_norm(x, num_groups, channel_last=False, epsilon=1e-05):
         ),
         x_shape
     )
+
+def dot_product_attention_logits(
+    query: jax.Array,
+    key: jax.Array,
+    scaled=True
+):
+    """Compute dot-product attention logits.
+    
+    :param query: Query array of shape
+        ``(batch, query_length, num_heads, depth)``.
+    :param key: Key array of the same dtype as ``query`` and of shape
+        ``(batch, key_length, num_heads, depth)``.
+    :param scaled: Whether to apply the scaling factor of ``1/sqrt(depth)``.
+        Default: True.
+
+    :returns: Attention logits of
+        ``(batch, num_heads, query_length, key_length)``.
+    """
+    logits = lax.dot_general(
+        query, key,
+        (((3,), (3,)), ((0, 2), (0, 2)))
+    )
+    if scaled:
+        scaler = lax.convert_element_type(sqrt(query.shape[-1]), logits.dtype)
+        logits = lax.div(
+            logits,
+            scaler
+        )
+    return logits
+
+def apply_attention_mask(logits, mask, masked_value=-jax.numpy.inf):
+    """Apply attention mask to logits.
+
+    :param logits: Attention logits of shape
+        ``(batch, num_heads, query_length, key_length)``.
+    :param mask: Mask array of same shape as ``logits``. Must be boolean or
+        integer type.
+    :param masked_value: Value that will be taken by the masked logits. Default:
+        -inf, minimum value allowed by ``logits``' type.
+    
+    :returns logits: ``logits`` with ``mask`` applied.
+    """
+    masked_value = lax.full_like(
+        logits,
+        lax.convert_element_type(masked_value, logits.dtype),
+    )
+    return lax.select(mask, logits, masked_value)
+
+def apply_attention_weights(value, attention_weights):
+    """Apply attention weights to values.
+
+    :param value: Value array of shape
+        ``(batch, value_length, num_heads, depth)``.
+    :param attention_weights: Attention weights of the same dtype as ``value``
+        and of shape ``(batch, num_heads, query_length, value_length)``.
+
+    :returns activations: ``value`` with ``attention_weights`` applied, of shape
+        ``(batch, value_length, num_heads, depth)``.
+    """
+    activations = lax.dot_general(
+        value, attention_weights,
+        (((1,), (3,)), ((0, 2), (0, 1)))
+    )
+    return lax.transpose(activations, (0, 3, 1, 2))
