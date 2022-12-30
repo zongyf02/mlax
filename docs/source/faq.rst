@@ -4,8 +4,9 @@ Frequently Asked Questions
 Layers' ``fwd`` function is throwing an error when jit-compiled.
 ----------------------------------------------------------------
 First ensure that ``jax.jit`` uses the argument ``static_args=["hyperparams"]``.
-``hyperparams`` contains Python types, not valid JAX types. They can also be
-used for control-flow. They should be treated as compile-time constants.
+``hyperparams`` contains Python types such as strings, which not valid JAX
+types. ``hyperparams`` can also be used for control-flow. Therefore, they should
+be treated as compile-time constants.
 
 If the layers also have different behavior during inference and training, make
 sure ``static_args=["hyperparams", "inference_mode"]``. ``inference_mode`` in

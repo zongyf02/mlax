@@ -1,5 +1,6 @@
 from mlax.nn import BatchNorm, Conv, Linear, Bias, F
 from mlax.block import Series
+from common import assert_valid_pytree
 import jax.numpy as jnp
 from jax import (
     random,
@@ -14,8 +15,7 @@ inputs = jnp.ones((2, 3, 8, 8), dtype)
 trainables, non_trainables, hyperparams = Series.init(
     BatchNorm.init(
         next(keys_iter),
-        in_channels=3,
-        channel_axis=0
+        in_channels=3
     ),
     Bias.init(
         next(keys_iter),
@@ -34,10 +34,12 @@ trainables, non_trainables, hyperparams = Series.init(
     F.init(
         lambda x: jnp.reshape(x, (2, -1))
     ),
-    Linear.init(
-        next(keys_iter),
-        in_features=144, out_features=3,
-        kernel_initializer=nn.initializers.ones
+    Series.init(
+        Linear.init(
+            next(keys_iter),
+            in_features=144, out_features=3,
+            kernel_initializer=nn.initializers.ones
+        )
     ),
     F.init(
         lambda x: x,
@@ -45,18 +47,23 @@ trainables, non_trainables, hyperparams = Series.init(
     )
 )
 
+def test_init():
+    assert_valid_pytree(trainables, non_trainables, hyperparams)
+
 def test_fwd():
     fwd = jit(Series.fwd, static_argnames=["hyperparams", "inference_mode"])
     
-    activations, _ = fwd(
+    activations, ntr = fwd(
         inputs, trainables, non_trainables, hyperparams, False
     )
     assert lax.eq(
         activations,
         jnp.full((2, 3), 3888, dtype)
     ).all()
+    non_trainables.__class__ == ntr.__class__
 
-    activations, _ = fwd(
+    activations, ntr = fwd(
         inputs, trainables, non_trainables, hyperparams, True
     )
     assert activations == 0
+    non_trainables.__class__ == ntr.__class__

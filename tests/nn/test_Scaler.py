@@ -1,4 +1,5 @@
 from mlax.nn import Scaler
+from common import assert_valid_pytree
 import jax.numpy as jnp
 from jax import (
     random,
@@ -19,6 +20,7 @@ trainables, non_trainables, hyperparams = Scaler.init(
 )
 
 def test_init():
+    assert_valid_pytree(trainables, non_trainables, hyperparams)
     assert lax.eq(
         trainables,
         jnp.full((1, 3), 2, dtype)

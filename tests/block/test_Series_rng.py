@@ -1,6 +1,7 @@
 from mlax.nn import BatchNorm, Conv, Linear, Bias, F_rng, F
 from mlax.functional import dropout
 from mlax.block import Series_rng
+from common import assert_valid_pytree
 import jax.numpy as jnp
 from jax import (
     random,
@@ -15,8 +16,7 @@ inputs = jnp.ones((2, 3, 8, 8), dtype)
 trainables, non_trainables, hyperparams = Series_rng.init(
     BatchNorm.init(
         next(keys_iter),
-        in_channels=3,
-        channel_axis=0,
+        in_channels=3
     ),
     Bias.init(
         next(keys_iter),
@@ -35,28 +35,37 @@ trainables, non_trainables, hyperparams = Series_rng.init(
     F.init(
         lambda x: jnp.reshape(x, (2, -1))
     ),
-    Linear.init(
-        next(keys_iter),
-        in_features=144, out_features=3,
-        kernel_initializer=nn.initializers.ones
+    Series_rng.init(
+        Linear.init(
+            next(keys_iter),
+            in_features=144, out_features=3,
+            kernel_initializer=nn.initializers.ones
+        )
     ),
-    F_rng.init(
-        lambda x, key, infer: 0 if infer else dropout(x, key, 1.0, infer)
+    Series_rng.init(
+        F_rng.init(
+            lambda x, key, infer: 0 if infer else dropout(x, key, 1.0, infer)
+        )
     )
 )
+
+def test_init():
+    assert_valid_pytree(trainables, non_trainables, hyperparams)
 
 def test_fwd():
     fwd = jit(Series_rng.fwd, static_argnames=["hyperparams", "inference_mode"])
     
-    activations, _ = fwd(
+    activations, ntr = fwd(
         inputs, trainables, non_trainables, next(keys_iter), hyperparams, False
     )
     assert lax.eq(
         activations,
         jnp.full((2, 3), 3888, dtype)
     ).all()
+    non_trainables.__class__ == ntr.__class__
 
-    activations, _ = fwd(
+    activations, ntr = fwd(
         inputs, trainables, non_trainables, next(keys_iter), hyperparams, True
     )
     assert activations == 0
+    non_trainables.__class__ == ntr.__class__

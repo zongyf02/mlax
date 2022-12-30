@@ -5,16 +5,18 @@ from jax import (
 )
 from functools import reduce
 from operator import add
+from typing import Tuple, Any, Sequence, Union, Optional
 from mlax._utils import (
     _canon_int_sequence,
     _canon_opt_int_sequence,
     _canon_padding,
     _canon_opt_dtype,
-    _canon_precision
+    _canon_precision,
+    _nn_hyperparams
 )
-from typing import Tuple, Any, Sequence, Union, Optional, NamedTuple
 
-class Hyperparams(NamedTuple):
+@_nn_hyperparams
+class ConvHp:
     window_strides: Sequence[int] 
     padding: Union[str, Sequence[Tuple[int, int]]] 
     input_dilation: Optional[Sequence[int]]
@@ -40,11 +42,9 @@ def init(
     channel_last: bool=False,
     precision=None,
     accum_dtype=None,
-    kernel_in_axis: int=1,
-    kernel_out_axis: int=0,
-    kernel_initializer=nn.initializers.glorot_uniform(in_axis=1, out_axis=0),
+    kernel_initializer=nn.initializers.glorot_uniform(),
     dtype=None
-) -> Tuple[jax.Array, None, Hyperparams]:
+) -> Tuple[jax.Array, None, ConvHp]:
     """Intialize parameters and hyperparameters for a convolutional layer.
 
     :param key: PRNG key for weight initialization.
@@ -82,10 +82,6 @@ def init(
         `jax.lax.conv_general_dilated`_. Default: None.
     :param accum_dtype: See the ``preferred_element_type`` parameter of
         `jax.lax.conv_general_dilated`_. Default: None.
-    :param kernel_in_axis: The axis of the kernel containing the input channels.
-        Default: 1.
-    :param kernel_out_axis: The axis of the kernel containing the ouput
-        channels. Default: 0.
     :param kernel_initializer: Kernel initializer as defined by
         ``jax.nn.initalizers <https://jax.readthedocs.io/en/latest/jax.nn.initializers.html>``.
         Default:: glorot uniform.
@@ -94,7 +90,7 @@ def init(
 
     :returns trainables: Initialized kernel weight.
     :returns non_trainables: None.
-    :returns hyperparams: NamedTuple containing the hyperparameters.
+    :returns hyperparams: ConvHp instance.
 
     .. note:
         By default, because ``kernel_in_axis=1`` and ``kernel_out_axis=0``, the
@@ -104,51 +100,40 @@ def init(
         If you override either ``kernel_in_axis`` or ``kernel_out_axis``, also
         override the default ``kernel_initializer`` to have matching
         ``in_axis`` and ``out_axis``.
-    
+
     .. _jax.lax.conv_general_dilated:
         https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.conv_general_dilated.html
     """
-    chars = tuple(str(i) for i in range(ndims))
-    if channel_last:
-        lhs_spec = reduce(add, chars, "N") + "C" # N...C
-    else:
-        lhs_spec = reduce(add, chars, "NC") # NC...
-
-    in_ndims = ndims + 2
-    kernel_in_axis, kernel_out_axis = (
-        kernel_in_axis + in_ndims if kernel_in_axis < 0 else kernel_in_axis,
-        kernel_out_axis + in_ndims if kernel_out_axis < 0 else kernel_out_axis
-    )
-    chars_iter = iter(chars)
-    kernel_spec = reduce(
-        add,
-        (
-            "I" if i == kernel_in_axis else
-            "O" if i == kernel_out_axis else
-            next(chars_iter) for i in range(in_ndims)
-        ),
-        ""
-    )
-
-    dummy_shape = (None,) * in_ndims
-    dimension_numbers = lax.conv_dimension_numbers(
-        dummy_shape, dummy_shape,
-        (lhs_spec, kernel_spec, lhs_spec)
-    )
-
-    filter_shape_iter = iter(
-        (filter_shape,) * ndims if isinstance(filter_shape, int) else filter_shape
-    )
+    filter_shape = _canon_int_sequence(filter_shape, ndims)
     kernel_weight = kernel_initializer(
         key,
-        tuple(
-            out_channels if c == "O" else
-            in_channels if c == "I" else
-            next(filter_shape_iter) for c in kernel_spec
-        ),
+        (*filter_shape, in_channels, out_channels),
         dtype
     )
-    hyperparams = Hyperparams(
+
+    chars = tuple(str(i) for i in range(ndims))
+    if channel_last:
+        io_spec = reduce(add, chars, "N") + "C" # N...C
+        kernel_spec = reduce(add, chars, "O") + "I" # O...I
+        kernel_weight = lax.transpose(
+            kernel_weight,
+            (ndims+1, *range(ndims), ndims)
+        )
+    else:
+        io_spec = reduce(add, chars, "NC") # NC...
+        kernel_spec = reduce(add, chars, "OI") # OI...
+        kernel_weight = lax.transpose(
+            kernel_weight,
+            (ndims+1, ndims, *range(ndims))
+        )
+
+    dummy_shape = (None,) * (ndims + 2)
+    dimension_numbers = lax.conv_dimension_numbers(
+        dummy_shape, dummy_shape,
+        (io_spec, kernel_spec, io_spec)
+    )
+
+    hyperparams = ConvHp(
         _canon_int_sequence(strides, ndims),
         _canon_padding(padding, ndims),
         _canon_opt_int_sequence(input_dilation, ndims),
@@ -166,17 +151,17 @@ def fwd(
     x: jax.Array,
     trainables: jax.Array,
     non_trainables: None,
-    hyperparams: Hyperparams,
+    hyperparams: ConvHp,
     inference_mode: bool=False
 ) -> jax.Array:
     """Applies convolutions on input features.
 
-    :param x: Input features to the convolutional layer. Must be of ``dtype``
-        and compatible with ``channel_last``.
+    :param x: Batched input features to the convolutional layer. Must be of
+        ``dtype`` and compatible with ``channel_last``.
     :param trainables: Trainable weights for a convolutional layer.
     :param non_trainables: Non-trainable weights for a convolutional layer,
         should be None. Ignored.
-    :param hyperparams: NamedTuple containing the hyperparameters.
+    :param hyperparams: ConvHp instance.
     :param inference_mode: Whether in inference or training mode. Ignored.
         Default: False.
  

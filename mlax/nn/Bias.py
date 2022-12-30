@@ -3,9 +3,11 @@ from jax import (
     nn,
     lax
 )
-from typing import Tuple, Any, NamedTuple, Sequence, Optional
+from typing import Tuple, Any, Sequence, Optional
+from mlax._utils import _nn_hyperparams
 
-class Hyperparams(NamedTuple):
+@_nn_hyperparams
+class BiasHp:
     broadcast_dims: Sequence[int]
 
 def init(
@@ -13,14 +15,14 @@ def init(
     in_feature_shape: Sequence[Optional[int]],
     bias_initializer=nn.initializers.zeros,
     dtype=None
-) -> Tuple[jax.Array, None, Hyperparams]:
+) -> Tuple[jax.Array, None, BiasHp]:
     """Intialize parameters and hyperparameters for a bias layer.
 
     :param key: PRNG key for weight initialization.
     :param in_feature_shape: Shape of the input features to add bias to. Use
         ``None`` on axes that do not require a bias, use ``1`` on axes that
         require a single bias term, and ``axis_length`` on axes that require a
-        bias term for each of their elements.
+        bias term for each of their ``axis_length`` elements.
     :param bias_initializer: Initializer as defined by
         ``jax.nn.initalizers <https://jax.readthedocs.io/en/latest/jax.nn.initializers.html>``.
         Default:: zeros.
@@ -30,7 +32,7 @@ def init(
     :returns trainables: Initialized bias weight of shape
         ``tuple(in_feature_shape[dim] for dim in bias_axis)``.
     :returns non_trainables: None.
-    :returns hyperparams: NamedTuple containing the hyperparamters.
+    :returns hyperparams: BiasHp instance.
     """
     bias_weight = bias_initializer(
         key,
@@ -38,7 +40,7 @@ def init(
         dtype
     )
 
-    return bias_weight, None, Hyperparams(
+    return bias_weight, None, BiasHp(
         tuple(
             i + 1 for i, axis in enumerate(in_feature_shape) if axis is not None
         )
@@ -48,17 +50,17 @@ def fwd(
     x: jax.Array,
     trainables: jax.Array,
     non_trainables: None,
-    hyperparams: Hyperparams,
+    hyperparams: BiasHp,
     inference_mode: bool=False
 ) -> jax.Array:
     """Add bias to input features.
 
     :param x: Input features to the bias layer. Must be of ``dtype`` and of the
-        shape ``(n_batches, *in_feature_shape)``.
+        shape ``(batch, *in_feature_shape)``.
     :param trainables: Trainable weights for a bias layer.
     :param non_trainables: Non-trainable weights for a bias layer, should
         be None. Ignored.
-    :param hyperparams: NamedTuple containing the hyperparameters. 
+    :param hyperparams: BiasHp instance.
     :param inference_mode: Whether in inference or training mode. Ignored.
         Default: False.
 

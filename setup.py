@@ -5,7 +5,7 @@ with open("README.md", "r") as file:
 
 setup(
     name="mlax_nn",
-    version="0.1.2",
+    version="0.1.3",
     description="A pure functional machine learning library build on top of Google JAX.",
     long_description=long_description,
     long_description_content_type="text/markdown",
