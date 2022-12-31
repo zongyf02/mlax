@@ -32,16 +32,16 @@ def init(
     :param in_features: Number of input features.
     :param out_features: Number of output features.
     :param precision: See ``precision`` parameter of
-        ``jax.lax.dot <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.dot_general.html>``,
+        `jax.lax.dot <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.dot_general.html>`_,
         which is used internally in the forward pass. Default: None.
     :param accum_dtype: See ``preferred_element_type`` parameter of
-        ``jax.lax.dot <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.dot_general.html>``,
+        `jax.lax.dot <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.dot_general.html>`_,
         which is used internally in the forward pass. Default: None.
     :param transposed_kernel: Whether the kernel is of the shape
         ``(out_features, in_features)`` or ``(in_features, out_features)``.
         Default: False, ``(in_features, out_features)``.
     :param kernel_initializer: Kernel initializer as defined by
-        ``jax.nn.initalizers <https://jax.readthedocs.io/en/latest/jax.nn.initializers.html>``.
+        `jax.nn.initalizers <https://jax.readthedocs.io/en/latest/jax.nn.initializers.html>`_.
         Default:: glorot uniform.
     :param dtype: Type of initialized kernel weight. Default: None.
         ``kernel_initializer``'s default.
