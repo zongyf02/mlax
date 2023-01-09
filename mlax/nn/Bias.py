@@ -55,8 +55,8 @@ def fwd(
 ) -> jax.Array:
     """Add bias to input features.
 
-    :param x: Input features to the bias layer. Must be of ``dtype`` and of the
-        shape ``(batch, *in_feature_shape)``.
+    :param x: Input features to the bias layer. Must be of the shape
+        ``(batch, *in_feature_shape)``.
     :param trainables: Trainable weights for a bias layer.
     :param non_trainables: Non-trainable weights for a bias layer, should
         be None. Ignored.

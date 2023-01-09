@@ -75,8 +75,8 @@ def fwd(
 ) -> jax.Array:
     """Apply linear transformation without bias to input features.
 
-    :param x: Input features to the linear layer. Must be of ``dtype`` and of
-        the shape ``(batch, ..., in_features)``.
+    :param x: Input features to the linear layer. Must be of the shape
+        ``(batch, ..., in_features)``.
     :param trainables: Trainable weights for a linear layer.
     :param non_trainables: Non-trainable weights for a linear layer, should
         be None. Ignored.

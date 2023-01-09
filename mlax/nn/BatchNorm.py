@@ -71,8 +71,8 @@ def fwd(
 ) -> Tuple[jax.Array, Tuple[jax.Array, jax.Array]]:
     """Apply batch normalization without the learnable parameters.
  
-    :param x: Batched input features to the batch norm. Must be of ``dtype`` and
-        compatible with ``channel_last``.
+    :param x: Batched input features to the batch norm. Must be compatible with
+        ``channel_last``.
     :param trainables: Trainable weights for a batch norm. Should be None.
         Ignored.
     :param non_trainables: Non-trainable weights for a batch norm.
