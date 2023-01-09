@@ -288,7 +288,7 @@ def layer_norm(x, epsilon=1e-05):
     
     :returns: ``x`` with layer normalization applied.
     """
-    reduce_dims = range(1, len(x.shape))
+    reduce_dims = range(1, x.ndim)
     n_elems = _n_elems(x, reduce_dims)
     mean = _mean(x, reduce_dims, n_elems)
     variance = _variance(x, reduce_dims, n_elems, mean)
@@ -306,7 +306,7 @@ def instance_norm(x, channel_last=False, epsilon=1e-05):
     
     :returns: ``x`` with instance normalization applied.
     """
-    in_ndims = len(x.shape)
+    in_ndims = x.ndim
     if channel_last:
         reduce_dims = range(1, in_ndims - 1)
         broadcast_dims = (0, in_ndims - 1)
@@ -340,7 +340,7 @@ def group_norm(x, num_groups, channel_last=False, epsilon=1e-05):
     :returns: ``x`` with group normalization applied.
     """
     x_shape = x.shape
-    in_ndims = len(x_shape)
+    in_ndims = x.ndim
     if channel_last:
         num_channels = x_shape[-1]
         x = lax.reshape(

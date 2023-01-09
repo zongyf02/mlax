@@ -85,23 +85,23 @@ def fwd(
     :returns y: Batch normalized ``x``.
     :returns non_trainables: Updated non-trainables.
     """
-    _ndims = len(x.shape)
+    in_ndims = x.ndim
     if inference_mode:
         mean, var = non_trainables
         mean = lax.convert_element_type(mean, x.dtype)
         var = lax.convert_element_type(var, x.dtype)
 
         if hyperparams.channel_last:
-            broadcast_dims = (_ndims - 1,)
+            broadcast_dims = (in_ndims - 1,)
         else:
             broadcast_dims = (1,)
     else:
         # Compute mean and variance
         if hyperparams.channel_last:
-            reduce_dims = range(0, _ndims - 1)
-            broadcast_dims = (_ndims - 1,)
+            reduce_dims = range(0, in_ndims - 1)
+            broadcast_dims = (in_ndims - 1,)
         else:
-            reduce_dims = (0, *range(2, _ndims))
+            reduce_dims = (0, *range(2, in_ndims))
             broadcast_dims = (1,)
 
         n_elems = _n_elems(x, reduce_dims)
