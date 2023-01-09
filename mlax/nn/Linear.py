@@ -76,7 +76,7 @@ def fwd(
     """Apply linear transformation without bias to input features.
 
     :param x: Input features to the linear layer. Must be of ``dtype`` and of
-        the shape ``(batch, in_features)``.
+        the shape ``(batch, ..., in_features)``.
     :param trainables: Trainable weights for a linear layer.
     :param non_trainables: Non-trainable weights for a linear layer, should
         be None. Ignored.
@@ -92,7 +92,7 @@ def fwd(
     return lax.dot_general(
         x,
         lax.convert_element_type(trainables, x.dtype),
-        (((1,), contracting_dims), ((), ())),
+        (((x.ndim-1,), contracting_dims), ((), ())),
         hyperparams.precision,
         hyperparams.accum_dtype
     ), None

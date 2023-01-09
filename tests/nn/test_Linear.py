@@ -10,7 +10,7 @@ from jax import (
 
 dtype = jnp.float32
 op_dtype = jnp.bfloat16
-inputs = jnp.ones((2, 4), op_dtype)
+inputs = jnp.ones((2, 3, 4), op_dtype)
 trainables1, non_trainables1, hyperparams1 = Linear.init(
     random.PRNGKey(0),
     in_features=4, out_features=3,
@@ -53,7 +53,7 @@ def test_fwd():
     )
     assert lax.eq(
         activations,
-        jnp.full((2, 3), 4, dtype)
+        jnp.full((2, 3, 3), 4, dtype)
     ).all()
     assert new_ntr is None
 
@@ -62,6 +62,6 @@ def test_fwd():
     )
     assert lax.eq(
         activations,
-        jnp.full((2, 3), 4, op_dtype)
+        jnp.full((2, 3, 3), 4, op_dtype)
     ).all()
     assert new_ntr is None 
