@@ -85,7 +85,7 @@ def fwd(
         Default: False.
 
     :returns y: ``x`` with linear transformation applied. Shape
-        ``(batch, out_features)``.
+        ``(batch, ..., out_features)``.
     :returns non_trainables: None.
     """
     contracting_dims = (1,) if hyperparams.transposed_kernel else (0,)
