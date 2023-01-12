@@ -5,10 +5,9 @@ from jax import (
     lax
 )
 from typing import Any, Sequence, Optional
-from mlax._utils import (
+from mlax.experimental._utils import (
     _canon_dtype,
-    _canon_opt_dtype,
-    _canon_precision
+    _canon_opt_dtype
 )
 
 

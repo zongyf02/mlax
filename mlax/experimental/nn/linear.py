@@ -5,10 +5,10 @@ from jax import (
     lax
 )
 from typing import Any
-from mlax._utils import (
+from mlax.experimental._utils import (
     _canon_dtype,
     _canon_opt_dtype,
-    _canon_precision
+    _canon_precision_pair
 )
 
 
@@ -52,7 +52,7 @@ class Linear(Module):
         
         self.transposed_kernel = bool(transposed_kernel)
         self.kernel_weight = Parameter(trainable=True)
-        self.precision = _canon_precision(precision)
+        self.precision = _canon_precision_pair(precision)
         self.accum_dtype = _canon_opt_dtype(accum_dtype)
 
     def _build(self, x):

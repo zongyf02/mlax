@@ -1,6 +1,6 @@
 from jax import random
 from mlax.experimental import Parameter, Module
-from mlax._utils import _needs_rng
+from mlax.experimental._utils import _needs_rng
 
 class Series(Module):
     """Combination of layers that do not require rng in series."""
