@@ -6,8 +6,7 @@ from jax import (
 )
 from typing import Any, Sequence, Optional
 from mlax.experimental._utils import (
-    _canon_dtype,
-    _canon_opt_dtype
+    _canon_dtype
 )
 
 
