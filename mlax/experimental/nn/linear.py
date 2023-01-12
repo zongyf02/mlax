@@ -1,10 +1,12 @@
 from mlax.experimental import Parameter, Module
 from jax import (
+    numpy as jnp,
     nn,
     lax
 )
 from typing import Any
 from mlax._utils import (
+    _canon_dtype,
     _canon_opt_dtype,
     _canon_precision
 )
@@ -20,7 +22,7 @@ class Linear(Module):
         accum_dtype=None,
         transposed_kernel=False,
         kernel_initializer=nn.initializers.glorot_uniform(),
-        dtype=None
+        dtype=jnp.float32
     ):
         """Initialize a linear layer.
 
@@ -38,16 +40,15 @@ class Linear(Module):
         :param kernel_initializer: Kernel initializer as defined by
             `jax.nn.initalizers <https://jax.readthedocs.io/en/latest/jax.nn.initializers.html>`_.
             Default:: glorot uniform.
-        :param dtype: Dtype of initialized kernel weight. Default: None.
-            ``kernel_initializer``'s default.
+        :param dtype: Dtype of initialized kernel weight. Default: float32.
         """
         super().__init__()
         self.initialized = False
 
         self._rng =  Parameter(trainable=True, data=rng)
-        self._out_features = out_features
+        self._out_features = int(out_features)
         self._kernel_initializer = kernel_initializer
-        self._dtype = dtype
+        self._dtype = _canon_dtype(dtype)
         
         self.transposed_kernel = bool(transposed_kernel)
         self.kernel_weight = Parameter(trainable=True)
@@ -58,13 +59,13 @@ class Linear(Module):
         """Initialize an uninitialized linear layer."""
         self.kernel_weight.data = self._kernel_initializer(
             self._rng,
-            (len(x), self._out_features),
+            (x.shape[-1], self._out_features),
             self._dtype
         )
 
-        del self._kernel_initializer
-        del self._rng
+        del self._rng      
         del self._out_features
+        del self._kernel_initializer
         del self._dtype
 
         if self.transposed_kernel:
@@ -80,13 +81,13 @@ class Linear(Module):
         
         :param self: Linear layer.
         :param x: Input features to the linear layer. Must be of the shape
-            ``(in_features,)``.
+            ``(..., in_features,)``.
         :param rng: PRNG key. Ignored. Default: None.
         :param inference_mode: Whether in inference or training mode. Ignored.
             Default: False.
         
         :returns: ``x`` with linear transformation applied. Shape
-            ``(out_features,)``.
+            ``(..., out_features)``.
         :returns: Linear layer with updated state. Possibly the same object as
             ``self``.
         """
@@ -96,8 +97,8 @@ class Linear(Module):
         contracting_dims = (1,) if self.transposed_kernel else (0,)
         return lax.dot_general(
             x,
-            self.kernel_weight.data.astype(x.dtype),
-            (((0,), contracting_dims), ((), ())),
+            lax.convert_element_type(self.kernel_weight.data, x.dtype),
+            (((x.ndim - 1,), contracting_dims), ((), ())),
             self.precision,
             self.accum_dtype
         ), self
