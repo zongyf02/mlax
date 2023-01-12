@@ -12,8 +12,11 @@ def _canon_precision(precision):
     else:
         return lax.Precision(precision)
 
+def _canon_dtype(dtype):
+    return lax.dtype(dtype)
+
 def _canon_opt_dtype(dtype):
-    return None if dtype is None else lax.dtype(dtype)
+    return None if dtype is None else _canon_dtype(dtype)
 
 def _canon_int_sequence(int_or_seq, length):
     return (
@@ -41,6 +44,10 @@ def _get_fwd(hyperparams):
 
 def _needs_key(fwd):
     return signature(fwd).parameters.__contains__("key")
+
+def _needs_rng(fwd):
+    # Raises exception if ``fwd`` does not have the ``rng`` keyword param
+    return signature(fwd).parameters["rng"].default is not None
 
 _nn_hyperparams = dataclass(frozen=True, slots=True)
 
