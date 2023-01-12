@@ -31,7 +31,11 @@ def test_load():
     assert b.y.data == 1
 
     # Assert correct load
-    b_reconstructed = b.load(trainables, non_trainables)
+    b_reconstructed = b.load_trainables(
+        trainables
+    ).load_non_trainables(
+        non_trainables
+    )
     assert b_reconstructed.x.data == 1
     assert b_reconstructed.y.data == 2
     assert b_reconstructed.z == "a"
@@ -61,7 +65,6 @@ def test_fwd():
     )(
         b,
         b.trainables,
-        b.non_trainables,
         xy,
         jax.random.PRNGKey(0),
         inference_mode=False

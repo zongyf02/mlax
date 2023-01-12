@@ -69,7 +69,7 @@ def test_linear(
     fwd = jax.jit(
         jax.vmap(
             Linear.fwd,
-            in_axes = (None, None, None, 0, None, None),
+            in_axes = (None, None, 0, None, None),
             out_axes = (0, None)
         ),
         static_argnames="inference_mode"
@@ -78,7 +78,6 @@ def test_linear(
     activations, linear = fwd(
         linear,
         linear.trainables,
-        linear.non_trainables,
         input,
         None, # rng
         False # inference_mode

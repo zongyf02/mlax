@@ -82,21 +82,36 @@ class Module(metaclass=_ModuleMeta):
         leaves = jtu.tree_leaves(self, is_leaf=is_parameter)
         return [x.copy() for x in leaves if is_parameter(x) and not x.trainable]
 
-    def load(
+    def load_trainables(
         self,
-        trainables: Sequence[Parameter],
+        trainables: Sequence[Parameter]
+
+    ):
+        """Return a copy of ``self`` with parameters replaced by ``trainables``.
+        """
+        trainables = iter(trainables)
+        def _load(leaf):
+            if is_parameter(leaf) and leaf.trainable:
+                return next(trainables).copy()
+            else:
+                return leaf
+        
+        return jtu.tree_map(
+            _load,
+            self,
+            is_leaf=is_parameter
+        )
+
+    def load_non_trainables(
+        self,
         non_trainables: Sequence[Parameter]
     ):
-        """Return a copy of ``self`` with parameters replaced by ``trainables``
-        and ``non_trainables`` """
-        trainables = iter(trainables)
+        """Return a copy of ``self`` with parameters replaced by
+        ``non_trainables`` """
         non_trainables = iter(non_trainables)
         def _load(leaf):
-            if is_parameter(leaf):
-                if leaf.trainable:
-                    return next(trainables).copy()
-                else:
-                    return next(non_trainables).copy()
+            if is_parameter(leaf) and not leaf.trainable:
+                return next(non_trainables).copy()
             else:
                 return leaf
         
@@ -106,18 +121,23 @@ class Module(metaclass=_ModuleMeta):
             is_leaf=is_parameter
         )
     
+    
     def __call__(self, x, rng, inference_mode=False):
         raise NotImplementedError()
     
     def fwd(
         self,
         trainables: Sequence[Parameter],
-        non_trainables: Sequence[Parameter],
         x: Any,
         rng: Any=None,
         inference_mode: bool=False
     ):
-        """Load ``trainables`` and ``non_trainables`` into ``self`` then invoke
-        ``__call__``."""
-        self = self.load(trainables, non_trainables)
-        return self(x, rng, inference_mode) 
+        """Load ``trainables`` into ``self`` then invoke ``__call__``."""
+        self = self.load_trainables(trainables)
+        return self(x, rng, inference_mode)
+
+    def __repr__(self):
+        repr = self.__class__.__name__ + "("
+        for name, value in vars(self).items():
+            repr += f"  {name}={value}, "
+        return repr + ")"

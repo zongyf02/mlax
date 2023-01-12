@@ -17,7 +17,7 @@ class F(Module):
             array. Called when ``inference_mode`` is True. If None, the
             ``train_fn`` is called instead. Default: None.
         """
-        super().init()
+        super().__init__()
         self.train_fn = train_fn
         self.infer_fn = infer_fn
     

@@ -16,7 +16,7 @@ class Bias(Module):
         self,
         rng: Any,
         in_feature_shape: Sequence[Optional[int]],
-        bias_initializer=nn.initializers.glorot_uniform(),
+        bias_initializer=nn.initializers.zeros,
         dtype=jnp.float32
     ):
         """Initialize a bias layer.
@@ -52,7 +52,7 @@ class Bias(Module):
             for axis in self._in_feature_shape if axis is not None
         ]
         self.bias_weight.data = self._bias_initializer(
-            self._rng,
+            self._rng.data,
             bias_shape,
             self._dtype
         )

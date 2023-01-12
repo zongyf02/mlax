@@ -49,7 +49,7 @@ def test_bias(
     fwd = jax.jit(
         jax.vmap(
             Bias.fwd,
-            in_axes = (None, None, None, 0, None, None),
+            in_axes = (None, None, 0, None, None),
             out_axes = (0, None)
         ),
         static_argnames="inference_mode"
@@ -58,7 +58,6 @@ def test_bias(
     activations, bias = fwd(
         bias,
         bias.trainables,
-        bias.non_trainables,
         input,
         None, # rng
         False # inference_mode

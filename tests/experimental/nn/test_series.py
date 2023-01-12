@@ -49,7 +49,7 @@ def test_series(
     fwd = jax.jit(
         jax.vmap(
             Series.fwd,
-            in_axes = (None, None, None, 0, None, None),
+            in_axes = (None, None, 0, None, None),
             out_axes = (0, None)
         ),
         static_argnames="inference_mode"
@@ -58,7 +58,6 @@ def test_series(
     activations, model = fwd(
         model,
         model.trainables,
-        model.non_trainables,
         input,
         None, # rng
         False # inference_mode
@@ -71,7 +70,6 @@ def test_series(
     activations, model = fwd(
         model,
         model.trainables,
-        model.non_trainables,
         input,
         None, # rng
         True # inference_mode
@@ -122,7 +120,7 @@ def test_series_rng(
     fwd = jax.jit(
         jax.vmap(
             SeriesRng.fwd,
-            in_axes = (None, None, None, 0, None, None),
+            in_axes = (None, None, 0, None, None),
             out_axes = (0, None)
         ),
         static_argnames="inference_mode"
@@ -131,7 +129,6 @@ def test_series_rng(
     activations, model = fwd(
         model,
         model.trainables,
-        model.non_trainables,
         input,
         rng,
         False # inference_mode
@@ -148,7 +145,6 @@ def test_series_rng(
     activations, model = fwd(
         model,
         model.trainables,
-        model.non_trainables,
         input,
         rng,
         True # inference_mode

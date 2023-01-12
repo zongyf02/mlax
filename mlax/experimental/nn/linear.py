@@ -58,7 +58,7 @@ class Linear(Module):
     def _build(self, x):
         """Initialize an uninitialized linear layer."""
         self.kernel_weight.data = self._kernel_initializer(
-            self._rng,
+            self._rng.data,
             (x.shape[-1], self._out_features),
             self._dtype
         )
