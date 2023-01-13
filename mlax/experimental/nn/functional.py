@@ -6,7 +6,8 @@ from jax import (
 from mlax.experimental._utils import (
     _canon_int_sequence,
     _canon_opt_int_sequence,
-    _canon_padding
+    _canon_padding,
+    _normalize
 )
 from math import prod, sqrt
 from typing import Any, Tuple, Sequence, Union, Callable, Optional
@@ -140,8 +141,8 @@ def max_pool(
 ) -> jax.Array:
     """Apply max pooling over input features.
 
-    :param x: Batched input features to the avg pooling transform. Must be
-        compatible with ``channel_last``.
+    :param x: Input features to the avg pooling transform. Must be compatible
+        with ``channel_last``.
     :param window_shape: See the ``window_shape`` parameter of ``pooling``.
     :param strides: See the ``strides`` parameter of ``pooling``. Default: 1.
     :param padding: See the ``padding`` parameter of ``pooling``.
@@ -177,8 +178,8 @@ def sum_pool(
 ) -> jax.Array:
     """Apply sum pooling over input features.
 
-    :param x: Batched input features to the avg pooling transform. Must be
-        compatible with ``channel_last``.
+    :param x: Input features to the avg pooling transform. Must be compatible
+        with ``channel_last``.
     :param window_shape: See the ``window_shape`` parameter of ``pooling``.
     :param strides: See the ``strides`` parameter of ``pooling``. Default: 1.
     :param padding: See the ``padding`` parameter of ``pooling``.
@@ -214,8 +215,8 @@ def avg_pool(
 ) -> jax.Array:
     """Apply average pooling over input features.
 
-    :param x: Batched input features to the avg pooling transform. Must be
-        compatible with ``channel_last``.
+    :param x: Input features to the avg pooling transform. Must be compatible
+        with ``channel_last``.
     :param window_shape: See the ``window_shape`` parameter of ``pooling``.
     :param strides: See the ``strides`` parameter of ``pooling``. Default: 1.
     :param padding: See the ``padding`` parameter of ``pooling``.
@@ -310,3 +311,71 @@ def apply_attention_weights(
     )
     # activations: (num_heads, depth, value_length)
     return lax.transpose(activations, (2, 0, 1))
+
+def layer_norm(x, epsilon=1e-05):
+    """Apply layer normalization.
+
+    :param x: Input features to layer norm, either in channel-first or
+        channel-last format.
+    :param epsilon: Small number added to variance to avoid divisions by zero.
+        Default: 1e-05.
+    
+    :returns: ``x`` with layer normalization applied.
+    """
+    return _normalize(x, range(x.ndim), epsilon)
+
+def instance_norm(x, channel_last=False, epsilon=1e-05):
+    """Apply instance normalization.
+
+    :param x: Input features to layer norm. Must be compatible with
+        ``channel_last``.
+    :param channel_last: Whether features are channel-last or first. Default:
+        False, channel-first.
+    :param epsilon: Small number added to variance to avoid divisions by zero.
+        Default: 1e-05.
+    
+    :returns: ``x`` with instance normalization applied.
+    """
+    dims = range(x.ndim - 1) if channel_last else range(1, x.ndim)
+    return _normalize(
+        x,
+        dims,
+        epsilon
+    )
+
+def group_norm(x, num_groups, channel_last=False, epsilon=1e-05):
+    """Apply group normalization.
+
+    :param x: Input features to layer norm. Must be compatible with
+        ``channel_last``.
+    :param num_groups: Number of groups to split the channels into. Must divide
+        the number of channels in ``x``.
+    :param channel_last: Whether features are channel-last or first. Default:
+        False, channel-first.
+    :param epsilon: Small number added to variance to avoid divisions by zero.
+        Default: 1e-05.
+    
+    :returns: ``x`` with group normalization applied.
+    """
+    x_shape = x.shape
+    if channel_last:
+        num_channels = x_shape[-1]
+        x = lax.reshape(
+            x, (*x_shape[:-1], num_channels//num_groups, num_groups)
+        )
+        dims = range(x.ndim - 1)
+    else:
+        num_channels = x_shape[0]
+        x = lax.reshape(
+            x, (num_groups, num_channels//num_groups, *x_shape[1:])
+        )
+        dims = range(1, x.ndim)
+    
+    return lax.reshape(
+        _normalize(
+            x,
+            dims,
+            epsilon
+        ),
+        x_shape
+    )

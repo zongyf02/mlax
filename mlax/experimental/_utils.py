@@ -42,3 +42,62 @@ def _canon_padding(padding, n_spatial_dims):
 def _needs_rng(fwd):
     # Raises exception if ``fwd`` does not have the ``rng`` keyword param
     return signature(fwd).parameters["rng"].default is not None
+
+def _n_elems(x, dims):
+    return lax.convert_element_type(
+        prod(d for i, d in enumerate(x.shape) if i in dims),
+        x.dtype
+    )
+
+def _mean(x, dims, n_elems=None):
+    if n_elems is None:
+        n_elems = _n_elems(x, dims)
+    return lax.div(
+        lax.reduce(x, 0, lax.add, dims),
+        n_elems
+    )
+
+def _variance(x, dims, mean=None, mean_of_squares=None, n_elems=None):
+    if mean is None:
+        if n_elems is None:
+            n_elems = _n_elems(x, dims)
+        mean = _mean(x, dims, n_elems)
+
+    if mean_of_squares is None:
+        if n_elems is None:
+            n_elems = _n_elems(x, dims)
+        mean_of_squares = _mean(lax.integer_pow(x, 2), dims, n_elems)
+
+    return lax.sub(
+        mean_of_squares,
+        lax.integer_pow(mean, 2) # Square of means
+    )
+
+def _normalize(x, dims, eps=1e-5, mean=None, variance=None, n_elems=None):
+    if mean is None:
+        if n_elems is None:
+            n_elems = _n_elems(x, dims)
+        mean = _mean(x, dims, n_elems)
+
+    if variance is None:
+        variance = _variance(x, dims, mean=mean, n_elems=n_elems)
+
+    broadcast_dims = [i for i in range(x.ndim) if i not in dims]
+
+    return lax.mul(
+        lax.sub(
+            x,
+            lax.broadcast_in_dim(mean, x.shape, broadcast_dims)
+        ),
+        lax.broadcast_in_dim(
+            lax.rsqrt(
+                lax.add(
+                    variance,
+                    lax.convert_element_type(
+                        eps, x.dtype
+                    )
+                )
+            ),
+            x.shape, broadcast_dims 
+        )
+    )
