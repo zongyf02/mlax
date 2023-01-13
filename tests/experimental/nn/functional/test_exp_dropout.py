@@ -1,4 +1,4 @@
-from mlax.functional import dropout
+from mlax.experimental.nn.functional import dropout
 import jax.numpy as jnp
 from jax import (
     lax,
@@ -20,7 +20,7 @@ import pytest
     ]
 )
 def test_dropout(input, params, expected_output):
-    activations = dropout(input, *params)
+    activations = dropout(input, **params)
     assert lax.eq(
         activations,
         expected_output
