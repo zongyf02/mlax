@@ -34,7 +34,7 @@ def dropout(
 
     :param x: Input features to the dropout transform.
     :param key: PRNG key for randomizing dropouts.
-    :param prob: Probability at which each element is dropped. Must be of a
+    :param prob: Probability at which each element is kept. Must be of a
         non-zero floating point type.
     :param inference_mode: Whether in inference or training mode. When True,
         dropouts are not applied. Default: False.
