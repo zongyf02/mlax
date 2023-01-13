@@ -1,8 +1,6 @@
 from jax import lax
 from math import prod
-import sys
 from inspect import signature
-from dataclasses import dataclass
 
 def _canon_precision(precision):
     return lax.Precision(precision)
