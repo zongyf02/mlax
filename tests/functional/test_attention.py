@@ -14,7 +14,7 @@ dtype = jnp.float16
 query = jnp.ones((2, 4, 8, 16), dtype)
 key = jnp.ones((2, 4, 8, 16), dtype)
 value = jnp.full((2, 4, 8, 16), 4, dtype)
-logits = jnp.ones((2, 8, 4, 4), dtype)
+logits = jnp.full((2, 8, 4, 4), 4, dtype)
 mask = jnp.concatenate((
     jnp.ones((2, 8, 4, 2), bool),
     jnp.zeros((2, 8, 4, 2), bool)
@@ -31,7 +31,7 @@ def test_dot_product_attention_logits():
     )
     assert lax.eq(
         _logits,
-        _logits
+        logits
     ).all()
 
 def test_apply_attention_mask():
