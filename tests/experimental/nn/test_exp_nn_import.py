@@ -7,4 +7,5 @@ def test_nn_import():
     assert hasattr(nn, "FRng")
     assert hasattr(nn, "Series")
     assert hasattr(nn, "SeriesRng")
+    assert hasattr(nn, "Scaler")
     assert hasattr(nn, "functional")
