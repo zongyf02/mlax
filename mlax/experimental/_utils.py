@@ -20,8 +20,8 @@ def _canon_opt_dtype(dtype):
 
 def _canon_int_sequence(int_or_seq, length):
     return (
-        [int_or_seq] * length if isinstance(int_or_seq, int) else
-        list(int_or_seq)
+        tuple([int_or_seq] * length) if isinstance(int_or_seq, int)
+        else tuple(int_or_seq)
     )
 
 def _canon_opt_int_sequence(opt_int_or_seq, length):
@@ -31,13 +31,16 @@ def _canon_opt_int_sequence(opt_int_or_seq, length):
     )
 
 def _canon_padding(padding, n_spatial_dims):
-    return (
-        padding if isinstance(padding, str) else
-        [(padding, padding)] * n_spatial_dims if isinstance(padding, int) else
-        list(
+    if padding == "VALID":
+        return tuple([(0, 0)] * n_spatial_dims)
+    elif isinstance(padding, str):
+        return padding
+    elif isinstance(padding, int):
+        return tuple([(padding, padding)] * n_spatial_dims)
+    else:
+        return tuple(
             (dim, dim) if isinstance(dim, int) else dim for dim in padding
         )
-    )
 
 def _needs_rng(fwd):
     # Raises exception if ``fwd`` does not have the ``rng`` keyword param

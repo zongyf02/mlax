@@ -101,23 +101,29 @@ def pool(
     window_dilation = _canon_opt_int_sequence(window_dilation, n_spatial_dims)
 
     if channel_last:
-        window_shape.append(1)
-        strides.append(1)
-        if isinstance(padding, list):
-            padding.append((0, 0))
-        if isinstance(input_dilation, list):
-            input_dilation.append(1)
-        if isinstance(window_dilation, list):
-            window_dilation.append(1)
+        window_shape = window_shape + (1,)
+        strides = strides + (1,)
+        padding = padding + ((0, 0),) if isinstance(padding, tuple) else padding
+        input_dilation = (
+            input_dilation + (1,) if isinstance(input_dilation, tuple)
+            else input_dilation
+        )
+        window_dilation = (
+            window_dilation + (1,) if isinstance(window_dilation, tuple)
+            else window_dilation
+        )
     else:
-        window_shape.insert(0, 1)
-        strides.insert(0, 1)
-        if isinstance(padding, list):
-            padding.insert(0, (0, 0))
-        if isinstance(input_dilation, list):
-            input_dilation.insert(0, 1)
-        if isinstance(window_dilation, list):
-            window_dilation.insert(0, 1)
+        window_shape = (1,) + window_shape
+        strides = (1,) + strides
+        padding = ((0, 0),) + padding if isinstance(padding, tuple) else padding
+        input_dilation = (
+            (1,) + input_dilation if isinstance(input_dilation, tuple) else
+            input_dilation
+        )
+        window_dilation = (
+            (1,) + window_dilation if isinstance(window_dilation, tuple) else
+            window_dilation
+        )
 
     return lax.reduce_window(
         x,
