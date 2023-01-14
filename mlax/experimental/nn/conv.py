@@ -36,7 +36,7 @@ class Conv(Module):
         kernel_initializer=nn.initializers.glorot_uniform(),
         dtype=jnp.float32
     ):
-        """Initialize a linear layer.
+        """Initialize a Conv layer.
 
         :param rng: PRNG key for weight initialization.
         :param n_spatial_dims: Number of input spatial dimensions.
@@ -170,7 +170,7 @@ class Conv(Module):
         """Apply convolutions on input features.
 
         :param self: Conv layer.
-        :param x: Input features to the conv layer. Must be unbatched and
+        :param x: Input features to the Conv layer. Must be unbatched and
         thus having ``n_spatial_dims + 1`` dimensions and be compatible with
             ``channel_last``.
         :param rng: PRNG key. Ignored. Default: None.
