@@ -1,4 +1,5 @@
 from jax import random
+from typing import Sequence
 from mlax.experimental import Parameter, Module
 from mlax.experimental._utils import _needs_rng
 
@@ -6,11 +7,11 @@ class Series(Module):
     """Combination of layers that do not require rng in series."""
     def __init__(
         self,
-        layers
+        layers: Sequence[Module]
     ):
         """Initialize a series layer.
 
-        :param layers: Layers to combine from each of the layers.
+        :param layers: Layers to combine in series.
         """
         super().__init__()
         self.layers = Parameter(
@@ -43,11 +44,11 @@ class SeriesRng(Module):
     """Combination of layers that may require rng in series."""
     def __init__(
         self,
-        layers
+        layers: Sequence[Module]
     ):
         """Initialize a series layer.
 
-        :param layers: Layers to combine from each of the layers.
+        :param layers: Layers to combine in series.
         """
         super().__init__()
         self.layers = Parameter(
@@ -65,8 +66,8 @@ class SeriesRng(Module):
             False.
         
         :returns: Output of ``layers`` applied in series on ``x``.
-        :returns: Series layer with updated state. Possibly the same object as
-            ``self``.
+        :returns: SeriesRng layer with updated state. Possibly the same object
+            as ``self``.
         """
         layers = self.layers.data
         needs_rngs = [_needs_rng(layer) for layer in layers]

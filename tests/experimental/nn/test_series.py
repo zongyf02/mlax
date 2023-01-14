@@ -1,6 +1,7 @@
 import jax
 from jax import (
     numpy as jnp,
+    tree_util as jtu,
     random,
     nn,
     lax
@@ -101,8 +102,14 @@ def test_series(
             ],
             jnp.ones((2, 4), jnp.bfloat16),
             random.PRNGKey(1),
-            jnp.full((2, 3), 5, jnp.bfloat16),
-            jnp.full((2, 3), 10, jnp.bfloat16),
+            (
+                jnp.full((2, 3), 5, jnp.bfloat16),
+                jnp.stack([random.PRNGKey(1), random.PRNGKey(1)])
+            ),
+            (
+                jnp.full((2, 3), 10, jnp.bfloat16),
+                jnp.stack([random.PRNGKey(1), random.PRNGKey(1)])
+            )
         ),
     ]
 )
@@ -133,14 +140,14 @@ def test_series_rng(
         rng,
         False # inference_mode
     )
-    assert lax.eq(
-        activations[0],
-        expected_train_output
-    ).all()
-    assert lax.eq(
-        activations[1],
-        jnp.stack([rng, rng])
-    ).all()
+    assert jtu.tree_reduce(
+        lambda acc, x: acc and x,
+        jtu.tree_map(
+            lambda a, b: lax.eq(a, b).all(),
+            activations,
+            expected_train_output
+        )
+    )
 
     activations, model = fwd(
         model,
@@ -149,11 +156,11 @@ def test_series_rng(
         rng,
         True # inference_mode
     )
-    assert lax.eq(
-        activations[0],
-        expected_infer_output
-    ).all()
-    assert lax.eq(
-        activations[1],
-        jnp.stack([rng, rng])
-    ).all()
+    assert jtu.tree_reduce(
+        lambda acc, x: acc and x,
+        jtu.tree_map(
+            lambda a, b: lax.eq(a, b).all(),
+            activations,
+            expected_infer_output
+        )
+    )

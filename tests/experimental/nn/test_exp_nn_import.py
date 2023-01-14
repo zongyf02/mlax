@@ -11,3 +11,5 @@ def test_nn_import():
     assert hasattr(nn, "Conv")
     assert hasattr(nn, "BatchNorm")
     assert hasattr(nn, "functional")
+    assert hasattr(nn, "Parallel")
+    assert hasattr(nn, "ParallelRng")

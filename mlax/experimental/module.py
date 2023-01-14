@@ -141,3 +141,7 @@ class Module(metaclass=_ModuleMeta):
         for name, value in vars(self).items():
             repr += f"  {name}={value}, "
         return repr + ")"
+
+def is_mlax_module(m) -> bool:
+    """Whether ``m`` is a module"""
+    return isinstance(m, Module)
