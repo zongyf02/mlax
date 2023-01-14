@@ -45,7 +45,7 @@ class Linear(Module):
         super().__init__()
         self.initialized = False
 
-        self._rng =  Parameter(trainable=True, data=rng)
+        self._rng =  Parameter(trainable=False, data=rng)
         self._out_features = int(out_features)
         self._kernel_initializer = kernel_initializer
         self._dtype = _canon_dtype(dtype)

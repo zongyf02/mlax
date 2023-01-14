@@ -35,7 +35,7 @@ class Bias(Module):
         super().__init__()
         self.initialized = False
 
-        self._rng = Parameter(trainable=True, data=rng)
+        self._rng = Parameter(trainable=False, data=rng)
         self._in_feature_shape = tuple(in_feature_shape)
         self._bias_initializer = bias_initializer
         self._dtype = _canon_dtype(dtype)

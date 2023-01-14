@@ -84,7 +84,7 @@ class Conv(Module):
         super().__init__()
         self.initialized = False
 
-        self._rng =  Parameter(trainable=True, data=rng)
+        self._rng =  Parameter(trainable=False, data=rng)
         self._n_spatial_dims = int(n_spatial_dims)
         self._out_channels = int(out_channels)
         self._filter_shape = _canon_int_sequence(
