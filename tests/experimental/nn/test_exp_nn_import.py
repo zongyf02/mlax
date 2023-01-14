@@ -9,4 +9,5 @@ def test_nn_import():
     assert hasattr(nn, "SeriesRng")
     assert hasattr(nn, "Scaler")
     assert hasattr(nn, "Conv")
+    assert hasattr(nn, "BatchNorm")
     assert hasattr(nn, "functional")
