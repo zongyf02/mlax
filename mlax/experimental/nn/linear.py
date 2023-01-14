@@ -13,7 +13,7 @@ from mlax.experimental._utils import (
 
 
 class Linear(Module):
-    """Linear transformation with lazy kernel initialization."""
+    """Linear transformation layer with lazy kernel initialization."""
     def __init__(
         self,
         rng: Any,
@@ -39,7 +39,7 @@ class Linear(Module):
             Default: False, the former.
         :param kernel_initializer: Kernel initializer as defined by
             `jax.nn.initalizers <https://jax.readthedocs.io/en/latest/jax.nn.initializers.html>`_.
-            Default:: glorot uniform.
+            Default: glorot uniform.
         :param dtype: Dtype of initialized kernel weight. Default: float32.
         """
         super().__init__()
