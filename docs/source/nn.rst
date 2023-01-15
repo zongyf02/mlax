@@ -1,32 +1,29 @@
-``mlax.nn`` 
-===========
+Neural Network Layers
+=====================
 
-The ``mlax.nn`` package contains neural network layers. Examples include
-``mlax.nn.Linear`` and ``mlax.nn.Conv``, which applies a linear transformation
-and convolutions respectively.
+``mlax.nn`` contains common neural network layers such as ``mlax.nn.Linear`` and
+``mlax.nn.Conv``.
 
-Modules under ``mlax.nn`` each has two functions:
+``mlax.nn`` also contains meta-layers such as ``mlax.nn.Series`` and
+``mlax.nn.Parallel``, which can combine layers in series or parallel.
 
-* ``init`` initializes layer parameters. It returns trainable and non-trainable
-    weights, which are two seperate `PyTrees <https://jax.readthedocs.io/en/latest/pytrees.html>`_
-    of JAX arrays. It also returns some hyperparameters, which should be a
-    NamedTuple of hashable Python types.
-* ``fwd`` takes in batched inputs compatible with the weights and
-    hyperparameters from ``init``, and performs a forward pass, returning the
-    activations and new non-trainable weights.
+.. note::
+    Each meta-layer has two variants. ``mlax.nn.<layer>``, which assumes its
+    layers' ``__call__`` do not require a PRNGKey and whose ``__call__``
+    does not require a PRNGKey and , and ``mlax.nn.<layer>Rng``, which does not
+    make such assumption and whose ``__call__`` requires a PRNGKey.
+    
+    When possible, use the former as it is slightly more efficient.
 
-.. warning::
-    A ``fwd`` function's compute dtype is the input dtype. That means that all
-    trainables will be implicitly casted to the input features' dtype prior to
-    any calculations. So, unless overridden, all intermediates and the final
-    activations will also in that same dtype.
+``mlax.nn`` also contains ``mlax.nn.F`` and ``mlax.nn.FRng``, which are wrappers
+that turn pure JAX functions into layers.
 
-    If there are non-trainables, they are updated from intermediates that are
-    casted back to the non-trainables' dtype.
+All of the above are implemented via ``mlax.Module``.
 
-``mlax.nn`` also has two special modules: ``mlax.nn.F`` and ``mlax.nn.F_rng``.
-They are used to convert stateless functions, such as those from ``jax.nn`` and
-``mlax.functional``, into layers. ``mlax.nn.F`` is for functions that do not
-require a PRNG key, ``mlax.nn.F_rng`` is for those that do.
+Finally, ``mlax.nn.functional`` contains pure JAX functions such as
+``mlax.nn.functional.dropout``, ``mlax.nn.functional.max_pool``, and
+``mlax.nn.functional.dot_product_attention_logits``.
 
-Multiple layers can be combined using ``mlax.blocks``.
+.. note::   
+    For maximum flexbility, all layers and functions assume their input to be
+    unbatched. Use ``jax.vmap`` to add any batch dimension.
