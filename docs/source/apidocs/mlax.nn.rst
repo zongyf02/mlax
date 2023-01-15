@@ -4,58 +4,74 @@ mlax.nn package
 Submodules
 ----------
 
-mlax.nn.BatchNorm module
+mlax.nn.batchnorm module
 ------------------------
 
-.. automodule:: mlax.nn.BatchNorm
+.. automodule:: mlax.nn.batchnorm
    :members:
    :undoc-members:
    :show-inheritance:
 
-mlax.nn.Bias module
+mlax.nn.bias module
 -------------------
 
-.. automodule:: mlax.nn.Bias
+.. automodule:: mlax.nn.bias
    :members:
    :undoc-members:
    :show-inheritance:
 
-mlax.nn.Conv module
+mlax.nn.conv module
 -------------------
 
-.. automodule:: mlax.nn.Conv
+.. automodule:: mlax.nn.conv
    :members:
    :undoc-members:
    :show-inheritance:
 
-mlax.nn.F module
+mlax.nn.f module
 ----------------
 
-.. automodule:: mlax.nn.F
+.. automodule:: mlax.nn.f
    :members:
    :undoc-members:
    :show-inheritance:
 
-mlax.nn.F\_rng module
----------------------
+mlax.nn.functional module
+-------------------------
 
-.. automodule:: mlax.nn.F_rng
+.. automodule:: mlax.nn.functional
    :members:
    :undoc-members:
    :show-inheritance:
 
-mlax.nn.Linear module
+mlax.nn.linear module
 ---------------------
 
-.. automodule:: mlax.nn.Linear
+.. automodule:: mlax.nn.linear
    :members:
    :undoc-members:
    :show-inheritance:
 
-mlax.nn.Scaler module
+mlax.nn.parallel module
+-----------------------
+
+.. automodule:: mlax.nn.parallel
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+mlax.nn.scaler module
 ---------------------
 
-.. automodule:: mlax.nn.Scaler
+.. automodule:: mlax.nn.scaler
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+mlax.nn.series module
+---------------------
+
+.. automodule:: mlax.nn.series
    :members:
    :undoc-members:
    :show-inheritance:

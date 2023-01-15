@@ -1,4 +1,4 @@
-# [mlax]: Pure functional ML library built on top of Google [JAX]
+# MLAX: Pure functional ML library built on top of Google JAX
 
 [**Overview**](#overview)
 | [**Installation**](#installation)
@@ -6,40 +6,76 @@
 | [**Examples**](https://github.com/zongyf02/mlax/tree/main/examples)
 | [**Documentation**](https://mlax.readthedocs.io/en/latest/)
 
-## What is [mlax]?<a id="overview"></a>
-[mlax] is a ML library built with Google [JAX], and it follows [JAX]'s
-[pure functional paradigm](https://jax.readthedocs.io/en/latest/notebooks/Common_Gotchas_in_JAX.html#pure-functions).
+## What is MLAX?<a id="overview"></a>
+MLAX is a pure functional ML library built on top Google [JAX](https://github.com/google/jax).
 
-This means [mlax] is fully compatible with native JAX transformations; and you
-don't need anything else for [mlax] to work.
+MLAX follows object-oriented semantics like Keras and PyTorch, but remains fully
+compatible with native JAX transformations.
 
-If you understand [JAX], you understand [mlax]!
+Learn more about MLAX on [Read the Docs](https://mlax.readthedocs.io/en/latest/overview.html).
 
 ## Installation<a id="installation"></a>
-[mlax] is on PyPi. You can install [mlax] using `pip`.
+[Install JAX](https://github.com/google/jax#installation) first if you have not
+already.
 
 ```pip install mlax-nn```
 
-Note that this also installs the CPU version of JAX on your machine. If you need
-GPU acceleration, follow JAX's [installation guide](https://github.com/google/jax#installation).
-
 ## Quickstart<a id="quickstart"></a>
-Then take a look at mlax's [API Overview](https://mlax.readthedocs.io/en/latest/overview.html).
+This is a simple linear layer defined using only the MLAX Module and Parameter.
 
-Run some [examples](https://github.com/zongyf02/mlax/tree/main/examples) with
-reference implementations in [Pytorch].
+``` Python
+import jax
+from jax import (
+    numpy as jnp,
+    nn,
+    random
+)
+from mlax import Module, Parameter
 
-Finally, read the [API Reference](https://mlax.readthedocs.io/en/latest/apidocs/modules.html).
+class Linear(Module):
+    def __init__(self, in_features, out_features, rng):
+        rng1, rng2 = random.split(rng)
+        self.kernel_weight = Parameter(
+            trainable=True,
+            data=nn.initializers.glorot_uniform()(rng1, (in_features, out_features))
+        )
+        self.bias_weight = Parameter(
+            trainable=True,
+            data=nn.initializers.zeros(rng2, (out_features,))
+        )
+    
+    def __call__(self, x, rng=None, inference_mode=False):
+        return x @ self.kernel_weight.data + self.bias_weight.data, self
+```
+
+It is fully compatible with native JAX transformations:
+
+``` Python
+def loss_fn(model, x, y):
+    pred, model = model(x)
+    return jnp.mean(y - pred) ** 2, model
+
+model = Linear(3, 4, random.PRNGKey(0))
+x = jnp.ones((4, 3), dtype=jnp.float32)
+y = jnp.ones((4, 4), dtype=jnp.float32)
+
+(loss, model), grads = jax.jit(
+    jax.value_and_grad(
+        loss_fn,
+        has_aux=True
+    )
+)(model, x, y)
+```
+
+For end-to-end examples with reference PyTorch implementations, visit MLAX's
+[GitHub](https://github.com/zongyf02/mlax/tree/main/examples).
+
+View the full documentation on [Read the Docs](https://mlax.readthedocs.io/en/latest/).
 
 ## Bugs and Feature Requests
-Please [create an issue](https://github.com/zongyf02/mlax/issues) on [mlax]'s
+Please [create an issue](https://github.com/zongyf02/mlax/issues) on MLAX's
 Github repository.
 
 ## Contribution
 If you wish to contribute, thank you and please contact me by email:
 y22zong@uwaterloo.ca.
-
-[mlax]: https://github.com/zongyf02/mlax
-[JAX]: https://github.com/google/jax
-[Tensorflow]: https://www.tensorflow.org/
-[Pytorch]: https://pytorch.org/

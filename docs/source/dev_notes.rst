@@ -18,8 +18,8 @@ However, if the unused parameters cannot be jit-compiled, and we list them under
 ``jax.jit``'s ``static_argnames``, then the function will be retraced every time
 new arguments are passed into the function.
 
-In the case of the ``inference_mode`` parameter that every ``fwd`` function in
-``mlax.nn`` has, if it is not used by the forward function, then do not include
+In the case of the ``inference_mode`` parameter that every ``__call__`` function
+in ``mlax.nn`` has, if it is not used by the forward function, do not include
 it in ``static_argnames`` when jit-compiling to prevent unnecessary retracing.
 If it is used by the forward function, then you must include it in
 ``static_argnames`` because it is used in control-flow. Ensure only ``True`` and
@@ -28,10 +28,6 @@ retracings are needed.
 
 When jit-compiling, JAX also ignores ``None`` arguments. You can verify this by
 using ``jax.make_jaxpr``.
-
-Therefore, many ``fwd`` functions' unused ``non_trainables`` parameters will not
-have a performance impact either, provided that you do not override default
-behavior by passing in something other than ``None``.
 
 Why aren't trainable and non-trainable weights Numpy arrays?
 ------------------------------------------------------------

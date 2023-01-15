@@ -10,9 +10,9 @@ Welcome to mlax's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   installation
-   examples
-   api_overview
+   overview
+   module
+   nn
    faq
    apidocs/modules 
    dev_notes
