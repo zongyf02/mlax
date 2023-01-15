@@ -18,7 +18,7 @@ key = random.PRNGKey(0)
             [
                 Scaler(
                     key,
-                    in_feature_shape=(-1,), 
+                    in_features=-1, 
                     scaler_initializer=nn.initializers.constant(2)
                 ),
                 [
@@ -110,7 +110,7 @@ def test_parallel(
             [
                 Scaler(
                     key,
-                    in_feature_shape=(-1,), 
+                    in_features=-1, 
                     scaler_initializer=nn.initializers.constant(2)
                 ),
                 [

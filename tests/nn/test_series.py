@@ -23,7 +23,7 @@ key = random.PRNGKey(0)
                 ),
                 Bias(
                     key,
-                    in_feature_shape=(-1,), 
+                    in_features=-1, 
                     bias_initializer=nn.initializers.ones
                 ),
                 F(
@@ -92,7 +92,7 @@ def test_series(
                 ),
                 Bias(
                     key,
-                    in_feature_shape=(-1,), 
+                    in_features=-1, 
                     bias_initializer=nn.initializers.ones
                 ),
                 FRng(
