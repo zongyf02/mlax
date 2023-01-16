@@ -3,7 +3,7 @@ Dev Notes
 
 Planned features ranked by priority
 ------------------------------------
-Attention, recurrent layers.
+Attention (complete but still need examples), recurrent layers.
 
 Is there a performance penalty for having unused function parameters?
 ----------------------------------------------------------------------
@@ -18,7 +18,7 @@ However, if the unused parameters cannot be jit-compiled, and we list them under
 ``jax.jit``'s ``static_argnames``, then the function will be retraced every time
 new arguments are passed into the function.
 
-In the case of the ``inference_mode`` parameter that every ``__call__`` function
+In the case of the ``inference_mode`` parameter every ``__call__`` function
 in ``mlax.nn`` has, if it is not used by the forward function, do not include
 it in ``static_argnames`` when jit-compiling to prevent unnecessary retracing.
 If it is used by the forward function, then you must include it in

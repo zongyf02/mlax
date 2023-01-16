@@ -4,8 +4,8 @@ Frequently Asked Questions
 Layers' ``__call__`` function is throwing an error when jit-compiled.
 ---------------------------------------------------------------------
 Ensure that a module's parameters only contain valid JAX types and that its
-hyperparameters are comparable and hashable. Jit-compiled function only operate
-on valid JAX types and requires its static arguments to be comparable and
+hyperparameters are comparable and hashable. Jit-compiled functions only operate
+on valid JAX types and require their static arguments to be comparable and
 hashable.
 
 If the layers also have different behavior during inference and training, make

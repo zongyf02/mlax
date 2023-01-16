@@ -7,9 +7,9 @@
 | [**Documentation**](https://mlax.readthedocs.io/en/latest/)
 
 ## What is MLAX?<a id="overview"></a>
-MLAX is a pure functional ML library built on top Google [JAX](https://github.com/google/jax).
+MLAX is a purely functional ML library built on top of Google [JAX](https://github.com/google/jax).
 
-MLAX follows object-oriented semantics like Keras and PyTorch, but remains fully
+MLAX follows object-oriented semantics like Keras and PyTorch but remains fully
 compatible with native JAX transformations.
 
 Learn more about MLAX on [Read the Docs](https://mlax.readthedocs.io/en/latest/overview.html).
