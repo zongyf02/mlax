@@ -1,8 +1,8 @@
 Overview
 ========
 
-`MLAX <https://github.com/zongyf02/mlax>`_ is a pure functional ML library built
-on top of Google `JAX <https://github.com/google/jax>`_.
+`MLAX <https://github.com/zongyf02/mlax>`_ is a purely functional ML library
+built on top of Google `JAX <https://github.com/google/jax>`_.
 
 MLAX follows object-oriented semantics like Keras and PyTorch.
 
