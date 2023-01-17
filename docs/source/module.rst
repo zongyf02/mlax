@@ -22,6 +22,11 @@ to be used in a jit-compiled module.
     This is because jit-compiled JAX functions' static arguments must be
     comparable and hashable.
 
+.. warning::
+    MLAX modules user ``vars()`` to determine its fields during flattening and
+    unflattening. This means all variables must be stored in ``__dict__``.
+    Avoid stroing variables in ``__slots__``.
+
 .. code-block:: python
 
     class Foo(Module):
