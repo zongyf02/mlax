@@ -20,7 +20,8 @@ to be used in a jit-compiled module.
 
 .. note::
     This is because jit-compiled JAX functions' static arguments must be
-    comparable and hashable.
+    comparable and hashable, and hyperparameters are treated as static
+    arguments.
 
 .. warning::
     MLAX modules user ``vars()`` to determine its fields during flattening and
@@ -49,9 +50,10 @@ Hyperparameters can be mutated, but they must be assigned static values if they
 were to be used inside ``jax.jit``.
 
 .. warning::
-    Modules with different parameters will be retraced when called. If a
-    hyperparameter can take on more than a few values, consider making it a
-    parameter to avoid excessive retracing.
+    Jit-compiled JAX functions are retraced when their static arguments change.
+    Since hyperparameters are treated as static arguments, if a hyperparameter
+    can take on more than a few values, consider making it a parameter to avoid
+    excessive retracing.
 
 .. code-block:: python
 
