@@ -38,10 +38,12 @@ class BatchNorm(Module):
         :param momentum: Momentum for the moving average. Default: 0.9.
         :param channel_last: Whether features are channel-last or first.
             Default: False, channel-first.
-        :param mean_initializer: Moving mean initializer as defined by
+        :param mean_initializer: Initializer for moving mean of shape
+            ``(n_channels,)`` as defined by
             ``jax.nn.initalizers <https://jax.readthedocs.io/en/latest/jax.nn.initializers.html>``.
             Default:: zeros.
-        :param var_initializer: moving variance initializer as defined by
+        :param var_initializer: Initializer for moving variance of shape
+            ``(n_channels,)`` as defined by
             ``jax.nn.initalizers <https://jax.readthedocs.io/en/latest/jax.nn.initializers.html>``.
             Default:: ones.
         :param dtype: Type of initialized moving mean and variance weight.
