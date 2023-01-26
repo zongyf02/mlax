@@ -86,8 +86,7 @@ class BatchNorm(Module):
         """Apply batch normalization to input features.
         
         :param self: BatchNorm layer.
-        :param x: Input features to the batch norm. Must be compatible with
-            ``channel_last``.
+        :param x: Input features. Must be compatible with ``channel_last``.
         :param rng: PRNG key. Ignored. Default: None.
         :param inference_mode: Whether in inference or training mode. Ignored.
             Default: False.

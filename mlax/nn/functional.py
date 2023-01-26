@@ -28,7 +28,7 @@ def dropout(
 ) -> jax.Array:
     """Apply random dropouts to input features.
 
-    :param x: Input features to the dropout transform.
+    :param x: Input features.
     :param rng: PRNG key for randomizing dropouts.
     :param prob: Probability at which each element is kept. Must be of a
         non-zero floating point type.
@@ -57,7 +57,7 @@ def pool(
     """Apply an arbitrary reduce function over poolings windows of input
         features.
 
-    :param x: Input features to the avg pooling transform that have
+    :param x: Input features. Must have be unbatched thus having
         ``n_spatial_dims + 1`` dimensions.
     :param init_value: Initial value of the reduce function over each pooling
         window.
@@ -147,8 +147,8 @@ def max_pool(
 ) -> jax.Array:
     """Apply max pooling over input features.
 
-    :param x: Input features to the avg pooling transform. Must be compatible
-        with ``channel_last``.
+    :param x: Input features. Must have be unbatched thus having
+        ``n_spatial_dims + 1`` dimensions.
     :param window_shape: See the ``window_shape`` parameter of ``pooling``.
     :param strides: See the ``strides`` parameter of ``pooling``. Default: 1.
     :param padding: See the ``padding`` parameter of ``pooling``.
@@ -184,8 +184,8 @@ def sum_pool(
 ) -> jax.Array:
     """Apply sum pooling over input features.
 
-    :param x: Input features to the avg pooling transform. Must be compatible
-        with ``channel_last``.
+    :param x: Input features. Must have be unbatched thus having
+        ``n_spatial_dims + 1`` dimensions.
     :param window_shape: See the ``window_shape`` parameter of ``pooling``.
     :param strides: See the ``strides`` parameter of ``pooling``. Default: 1.
     :param padding: See the ``padding`` parameter of ``pooling``.
@@ -221,8 +221,8 @@ def avg_pool(
 ) -> jax.Array:
     """Apply average pooling over input features.
 
-    :param x: Input features to the avg pooling transform. Must be compatible
-        with ``channel_last``.
+    :param x: Input features. Must have be unbatched thus having
+        ``n_spatial_dims + 1`` dimensions.
     :param window_shape: See the ``window_shape`` parameter of ``pooling``.
     :param strides: See the ``strides`` parameter of ``pooling``. Default: 1.
     :param padding: See the ``padding`` parameter of ``pooling``.
@@ -321,8 +321,7 @@ def apply_attention_weights(
 def layer_norm(x, epsilon=1e-05):
     """Apply layer normalization.
 
-    :param x: Input features to layer norm, either in channel-first or
-        channel-last format.
+    :param x: Input features, either in channel-first or channel-last format.
     :param epsilon: Small number added to variance to avoid divisions by zero.
         Default: 1e-05.
     
@@ -333,8 +332,7 @@ def layer_norm(x, epsilon=1e-05):
 def instance_norm(x, channel_last=False, epsilon=1e-05):
     """Apply instance normalization.
 
-    :param x: Input features to layer norm. Must be compatible with
-        ``channel_last``.
+    :param x: Input features. Must be compatible with ``channel_last``.
     :param channel_last: Whether features are channel-last or first. Default:
         False, channel-first.
     :param epsilon: Small number added to variance to avoid divisions by zero.
@@ -352,8 +350,7 @@ def instance_norm(x, channel_last=False, epsilon=1e-05):
 def group_norm(x, num_groups, channel_last=False, epsilon=1e-05):
     """Apply group normalization.
 
-    :param x: Input features to layer norm. Must be compatible with
-        ``channel_last``.
+    :param x: Input features. Must be compatible with ``channel_last``.
     :param num_groups: Number of groups to split the channels into. Must divide
         the number of channels in ``x``.
     :param channel_last: Whether features are channel-last or first. Default:

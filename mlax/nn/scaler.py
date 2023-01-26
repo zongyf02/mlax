@@ -73,8 +73,7 @@ class Scaler(Module):
         """Scale input features.
         
         :param self: Scaler layer.
-        :param x: Input features to the scaler layer. Must be of the shape
-            ``in_feature_shape``.
+        :param x: Input features. Must be of the shape ``in_feature_shape``.
         :param rng: PRNG key. Ignored. Default: None.
         :param inference_mode: Whether in inference or training mode. Ignored.
             Default: False.

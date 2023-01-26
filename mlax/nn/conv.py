@@ -170,8 +170,8 @@ class Conv(Module):
         """Apply convolutions on input features.
 
         :param self: Conv layer.
-        :param x: Input features to the Conv layer. Must be unbatched and
-        thus having ``n_spatial_dims + 1`` dimensions and be compatible with
+        :param x: Input features. Must be unbatched thus having
+            ``n_spatial_dims + 1`` dimensions and be compatible with
             ``channel_last``.
         :param rng: PRNG key. Ignored. Default: None.
         :param inference_mode: Whether in inference or training mode. Ignored.
