@@ -13,3 +13,4 @@ def test_nn_import():
     assert hasattr(nn, "functional")
     assert hasattr(nn, "Parallel")
     assert hasattr(nn, "ParallelRng")
+    assert hasattr(nn, "Embed")
