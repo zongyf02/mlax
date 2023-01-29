@@ -28,7 +28,16 @@ import pytest
                 jnp.zeros((8, 4, 2), jnp.float16)
             ), axis=-1), # expected weights
             jnp.full((4, 8, 16), 4, jnp.float16)
-        )
+        ),
+        (
+            jnp.ones((4, 16, 4), jnp.int8), # query
+            jnp.ones((2, 16, 4), jnp.int8), # key
+            jnp.full((2, 16, 8), 2, jnp.float32), # value
+            jnp.ones((16, 4, 2), bool), # Mask
+            jnp.full((16, 4, 2), 2, jnp.int8), # expected logits
+            jnp.full((16, 4, 2), 0.5, jnp.float32), # expected weights
+            jnp.full((4, 16, 8), 2, jnp.float32)
+        ),
     ]
 )
 def test_dot_product_attention(

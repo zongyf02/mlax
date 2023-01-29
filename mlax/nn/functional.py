@@ -259,13 +259,15 @@ def dot_product_attention_logits(
     query: jax.Array,
     key: jax.Array
 ):
-    """Compute dot-product attention logits.
+    """Compute scaled dot-product attention logits.
     
-    :param query: Query array of shape ``(query_length, num_heads, depth)``.
+    :param query: Query array of shape
+        ``(query_length, num_heads, query_key_depth)``.
     :param key: Key array of the same dtype as ``query`` and of shape
-        ``(key_length, num_heads, depth)``.
+        ``(key_value_length, num_heads, query_key_depth)``.
 
-    :returns: Attention logits of ``(num_heads, query_length, key_length)``.
+    :returns: Attention logits of
+        ``(num_heads, query_length, key_value_length)``.
     """
     logits = lax.dot_general(
         query, key,
@@ -284,7 +286,7 @@ def apply_attention_mask(
     """Apply attention mask to logits.
 
     :param logits: Attention logits of shape
-        ``(num_heads, query_length, key_length)``.
+        ``(num_heads, query_length, key_value_length)``.
     :param mask: Mask array of same shape as ``logits``. Must be boolean or
         integer type.
     :param masked_value: Value that will be taken by the masked logits. Default:
@@ -304,12 +306,13 @@ def apply_attention_weights(
 ):
     """Apply attention weights to values.
 
-    :param value: Value array of shape ``(value_length, num_heads, depth)``.
+    :param value: Value array of shape
+        ``(key_value_length, num_heads, value_depth)``.
     :param attention_weights: Attention weights of the same dtype as ``value``
-        and of shape ``(num_heads, query_length, value_length)``.
+        and of shape ``(num_heads, query_length, key_value_length)``.
 
     :returns activations: ``value`` with ``attention_weights`` applied, of shape
-        ``(value_length, num_heads, depth)``.
+        ``(query_length, num_heads, value_depth)``.
     """
     activations = lax.dot_general(
         value, attention_weights,
