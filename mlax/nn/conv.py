@@ -75,8 +75,8 @@ class Conv(Module):
             `jax.lax.conv_general_dilated`_. Default: None.
         :param accum_dtype: See the ``preferred_element_type`` parameter of
             `jax.lax.conv_general_dilated`_. Default: None.
-        :param kernel_initializer: Kernel initializer as defined by
-            ``jax.nn.initalizers <https://jax.readthedocs.io/en/latest/jax.nn.initializers.html>``.
+        :param kernel_initializer: Initializer for kernel of format "N..IO" as
+            defined by ``jax.nn.initalizers <https://jax.readthedocs.io/en/latest/jax.nn.initializers.html>``.
             Default:: glorot uniform.
         :param dtype: Type of initialized kernel weight. Default: None.
             ``kernel_initializer``'s default.
@@ -170,8 +170,8 @@ class Conv(Module):
         """Apply convolutions on input features.
 
         :param self: Conv layer.
-        :param x: Input features to the Conv layer. Must be unbatched and
-        thus having ``n_spatial_dims + 1`` dimensions and be compatible with
+        :param x: Input features. Must be unbatched thus having
+            ``n_spatial_dims + 1`` dimensions and be compatible with
             ``channel_last``.
         :param rng: PRNG key. Ignored. Default: None.
         :param inference_mode: Whether in inference or training mode. Ignored.

@@ -37,7 +37,8 @@ class Linear(Module):
         :param transposed_kernel: Whether the kernel is of the shape
             ``(out_features, in_features)`` or ``(in_features, out_features)``.
             Default: False, the former.
-        :param kernel_initializer: Kernel initializer as defined by
+        :param kernel_initializer: Initializer for kernel of shape
+            ``(in_features, out_features)`` as defined by
             `jax.nn.initalizers <https://jax.readthedocs.io/en/latest/jax.nn.initializers.html>`_.
             Default: glorot uniform.
         :param dtype: Dtype of initialized kernel weight. Default: float32.
@@ -80,8 +81,7 @@ class Linear(Module):
         """Apply linear transformation to input features.
         
         :param self: Linear layer.
-        :param x: Input features to the linear layer. Must be of the shape
-            ``(..., in_features,)``.
+        :param x: Input features. Must be of the shape ``(..., in_features,)``.
         :param rng: PRNG key. Ignored. Default: None.
         :param inference_mode: Whether in inference or training mode. Ignored.
             Default: False.

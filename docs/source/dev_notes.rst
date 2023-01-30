@@ -76,18 +76,6 @@ AFAIK, Tensorflow uses non-transposed weights for their Linear layer and Pytorch
 uses transposed weights.
 `Why are weights transposed in Pytorch nn.Linear? <https://github.com/pytorch/pytorch/issues/2159>`_
 
-Why don't Linear layers allow more flexible inputs and outputs?
--------------------------------------------------------------------
-``jax.lax.dot_general`` is very powerful and allows input and output shapes to
-have more than 2 dimensions. If Linear layers accept them as inputs, it would be
-possible to apply linear transformations directly on Convolution layers' output
-without first flattening for example.
-
-However, using by compiling the forward function and running cost analysis on it
-on both a CPU and CUDA backend, I found that reshaping the input to 2D prior
-to computation and then reshaping the 2D output post-computation gave better
-performance than simply using ``jax.lax.dot_general`` directly on the inputs.
-
 Convolution kernel layouts.
 ---------------------------
 For channel-first (NCHW), the kernel layout is OIHW. For channel-last (NHWC),
