@@ -169,7 +169,6 @@ class Conv(Module):
     def __call__(self, x, rng=None, inference_mode=False):
         """Apply convolutions on input features.
 
-        :param self: Conv layer.
         :param x: Input features. Must be unbatched thus having
             ``n_spatial_dims + 1`` dimensions and be compatible with
             ``channel_last``.

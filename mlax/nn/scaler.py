@@ -71,8 +71,7 @@ class Scaler(Module):
     
     def __call__(self, x, rng=None, inference_mode=False):
         """Scale input features.
-        
-        :param self: Scaler layer.
+
         :param x: Input features. Must be of the shape ``in_feature_shape``.
         :param rng: PRNG key. Ignored. Default: None.
         :param inference_mode: Whether in inference or training mode. Ignored.

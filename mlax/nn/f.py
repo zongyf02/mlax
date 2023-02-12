@@ -23,8 +23,7 @@ class F(Module):
     
     def __call__(self, x, rng=None, inference_mode=False):
         """Apply an arbitrary pure functional transform.
-        
-        :param self: F layer.
+
         :param x: Input features.
         :param rng: PRNG key. Ignored. Default: None.
         :param inference_mode: Whether in inference or training mode. Default:
@@ -62,8 +61,7 @@ class FRng(Module):
     
     def __call__(self, x, rng, inference_mode=False):
         """Apply an arbitrary pure functional transform.
-        
-        :param self: FRng layer.
+
         :param x: Input features.
         :param rng: PRNG key.
         :param inference_mode: Whether in inference or training mode. Default:

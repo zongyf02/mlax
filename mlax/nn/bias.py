@@ -72,8 +72,7 @@ class Bias(Module):
     
     def __call__(self, x, rng=None, inference_mode=False):
         """Add bias to input features.
-        
-        :param self: Bias layer.
+
         :param x: Input features. Must be of the shape ``in_feature_shape``.
         :param rng: PRNG key. Ignored. Default: None.
         :param inference_mode: Whether in inference or training mode. Ignored.
