@@ -47,7 +47,7 @@ class Embed(Module):
         :returns: Tokens converted to embeddings. Out-of-bound tokens are
             converted to NaNs for inexact types and minimum values for exact
             types.
-        :returns: Embed layer with updated state. Possible the same object as
+        :returns: Embed layer with updated state. Possibly the same object as
             ``self``.    
         """
         return self.embed_weight.data.at[x].get(mode="fill"), self
