@@ -85,8 +85,8 @@ class Conv(Module):
         self.initialized = False
 
         self._rng =  Parameter(trainable=False, data=rng)
-        self._n_spatial_dims = int(n_spatial_dims)
-        self._out_channels = int(out_channels)
+        self._n_spatial_dims = n_spatial_dims
+        self._out_channels = out_channels
         self._filter_shape = _canon_int_sequence(
             filter_shape, self._n_spatial_dims
         )
@@ -102,9 +102,9 @@ class Conv(Module):
         self.filter_dilation = _canon_opt_int_sequence(
             filter_dilation, self._n_spatial_dims
         )
-        self.feature_group_count = int(feature_group_count)
-        self.batch_group_count = int(batch_group_count)
-        self.channel_last = bool(channel_last)
+        self.feature_group_count = feature_group_count
+        self.batch_group_count = batch_group_count
+        self.channel_last = channel_last
         self.precision = _canon_precision_pair(precision)
         self.accum_dtype = _canon_opt_dtype(accum_dtype)
 

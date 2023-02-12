@@ -47,11 +47,11 @@ class Linear(Module):
         self.initialized = False
 
         self._rng =  Parameter(trainable=False, data=rng)
-        self._out_features = int(out_features)
+        self._out_features = out_features
         self._kernel_initializer = kernel_initializer
         self._dtype = _canon_dtype(dtype)
         
-        self.transposed_kernel = bool(transposed_kernel)
+        self.transposed_kernel = transposed_kernel
         self.kernel_weight = Parameter(trainable=True)
         self.precision = _canon_precision_pair(precision)
         self.accum_dtype = _canon_opt_dtype(accum_dtype)

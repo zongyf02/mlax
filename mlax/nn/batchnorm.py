@@ -63,9 +63,9 @@ class BatchNorm(Module):
         )
         self.moving_mean = Parameter(trainable=False)
         self.moving_var = Parameter(trainable=False)
-        self.epsilon = float(epsilon)
-        self.momentum = float(momentum)
-        self.channel_last = bool(channel_last)
+        self.epsilon = epsilon
+        self.momentum = momentum
+        self.channel_last = channel_last
         
 
     def _build(self, x):
