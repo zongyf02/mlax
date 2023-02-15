@@ -4,6 +4,10 @@ from jax import (
     random,
     lax
 )
+from mlax import (
+    fwd,
+    is_trainable
+)
 from mlax.nn import F, FRng
 import pytest
 
@@ -39,18 +43,17 @@ def test_f(
         **config
     )
 
-    fwd = jax.jit(
+    fwd_jit = jax.jit(
         jax.vmap(
-            F.fwd,
+            fwd,
             in_axes = (None, None, 0, None, None),
             out_axes = (0, None)
         ),
         static_argnames="inference_mode"
     )
 
-    activations, f = fwd(
-        f,
-        f.trainables,
+    activations, f = fwd_jit(
+        *f.partition(is_trainable),
         input,
         None, # rng
         False # inference_mode
@@ -60,9 +63,8 @@ def test_f(
         expected_train_output
     ).all()
 
-    activations, f = fwd(
-        f,
-        f.trainables,
+    activations, f = fwd_jit(
+        *f.partition(is_trainable),
         input,
         None, # rng
         True # inference_mode
@@ -107,18 +109,17 @@ def test_f_rng(
         **config
     )
 
-    fwd = jax.jit(
+    fwd_jit = jax.jit(
         jax.vmap(
-            FRng.fwd,
+            fwd,
             in_axes = (None, None, 0, None, None),
             out_axes = (0, None)
         ),
         static_argnames="inference_mode"
     )
 
-    activations, f_rng = fwd(
-        f_rng,
-        f_rng.trainables,
+    activations, f_rng = fwd_jit(
+        *f_rng.partition(is_trainable),
         input,
         rng,
         False # inference_mode
@@ -133,9 +134,8 @@ def test_f_rng(
     ).all()
     
 
-    activations, f_rng = fwd(
-        f_rng,
-        f_rng.trainables,
+    activations, f_rng = fwd_jit(
+        *f_rng.partition(is_trainable),
         input,
         rng,
         True # inference_mode

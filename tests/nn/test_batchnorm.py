@@ -5,6 +5,10 @@ from jax import (
     nn,
     lax
 )
+from mlax import (
+    fwd,
+    is_trainable
+)
 from mlax.nn import BatchNorm
 import pytest
 
@@ -91,9 +95,9 @@ def test_batch_norm(
     assert batch_norm.moving_mean.data is None
     assert batch_norm.moving_var.data is None
 
-    fwd = jax.jit(
+    fwd_jit = jax.jit(
         jax.vmap(
-            BatchNorm.fwd,
+            fwd,
             in_axes = (None, None, 0, None, None),
             out_axes = (0, None),
             axis_name = batch_axis_name
@@ -101,9 +105,8 @@ def test_batch_norm(
         static_argnames="inference_mode"
     )
 
-    activations, batch_norm = fwd(
-        batch_norm,
-        batch_norm.trainables,
+    activations, batch_norm = fwd_jit(
+        *batch_norm.partition(is_trainable),
         input,
         None, # rng
         inference_mode # inference_mode

@@ -5,6 +5,10 @@ from jax import (
     nn,
     lax
 )
+from mlax import (
+    fwd,
+    is_trainable
+)
 from mlax.nn import Scaler
 import pytest
 
@@ -57,18 +61,17 @@ def test_scaling(
     )
     assert scaling.scaler_weight.data is None
 
-    fwd = jax.jit(
+    fwd_jit = jax.jit(
         jax.vmap(
-            Scaler.fwd,
+            fwd,
             in_axes = (None, None, 0, None, None),
             out_axes = (0, None)
         ),
         static_argnames="inference_mode"
     )
 
-    activations, scaling = fwd(
-        scaling,
-        scaling.trainables,
+    activations, scaling = fwd_jit(
+        *scaling.partition(is_trainable),
         input,
         None, # rng
         False # inference_mode

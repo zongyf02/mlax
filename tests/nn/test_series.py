@@ -6,6 +6,10 @@ from jax import (
     nn,
     lax
 )
+from mlax import (
+    fwd,
+    is_trainable
+)
 from mlax.nn import Series, SeriesRng, Linear, Bias, F, FRng
 import pytest
 
@@ -47,18 +51,17 @@ def test_series(
         layers
     )
 
-    fwd = jax.jit(
+    fwd_jit = jax.jit(
         jax.vmap(
-            Series.fwd,
+            fwd,
             in_axes = (None, None, 0, None, None),
             out_axes = (0, None)
         ),
         static_argnames="inference_mode"
     )
 
-    activations, model = fwd(
-        model,
-        model.trainables,
+    activations, model = fwd_jit(
+        *model.partition(is_trainable),
         input,
         None, # rng
         False # inference_mode
@@ -68,9 +71,8 @@ def test_series(
         expected_train_output
     ).all()
     
-    activations, model = fwd(
-        model,
-        model.trainables,
+    activations, model = fwd_jit(
+        *model.partition(is_trainable),
         input,
         None, # rng
         True # inference_mode
@@ -124,20 +126,19 @@ def test_series_rng(
         layers
     )
 
-    fwd = jax.jit(
+    fwd_jit = jax.jit(
         jax.vmap(
-            SeriesRng.fwd,
+            fwd,
             in_axes = (None, None, 0, None, None),
             out_axes = (0, None)
         ),
         static_argnames="inference_mode"
     )
 
-    activations, model = fwd(
-        model,
-        model.trainables,
+    activations, model = fwd_jit(
+        *model.partition(is_trainable),
         input,
-        rng,
+        rng, # rng
         False # inference_mode
     )
     assert jtu.tree_reduce(
@@ -149,11 +150,10 @@ def test_series_rng(
         )
     )
 
-    activations, model = fwd(
-        model,
-        model.trainables,
+    activations, model = fwd_jit(
+        *model.partition(is_trainable),
         input,
-        rng,
+        rng, # rng
         True # inference_mode
     )
     assert jtu.tree_reduce(
