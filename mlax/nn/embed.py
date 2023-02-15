@@ -37,8 +37,7 @@ class Embed(Module):
     
     def __call__(self, x, rng=None, inference_mode=False):
         """Convert sequence of tokens into embeddings.
-        
-        :param self: Embed layer.
+
         :param x: Input tokens. Must be unbatched and of the shape
             ``(sequence_length,)``. Must be of an integer-like dtype.
         :param rng: PRNG key. Ignored. Default: None.
@@ -48,7 +47,7 @@ class Embed(Module):
         :returns: Tokens converted to embeddings. Out-of-bound tokens are
             converted to NaNs for inexact types and minimum values for exact
             types.
-        :returns: Embed layer with updated state. Possible the same object as
+        :returns: Embed layer with updated state. Possibly the same object as
             ``self``.    
         """
         return self.embed_weight.data.at[x].get(mode="fill"), self

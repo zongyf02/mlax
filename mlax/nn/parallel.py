@@ -29,8 +29,7 @@ class Parallel(Module):
     
     def __call__(self, x, rng=None, inference_mode=False):
         """Apply layers that do not require rng in parallel.
-        
-        :param self: Parallel layer.
+
         :param x: PyTree of input features, same structure as ``layers`` with
             MLAX Modules as leaves.
         :param rng: PRNG key. Ignored. Default: None.
@@ -76,8 +75,7 @@ class ParallelRng(Module):
     
     def __call__(self, x, rng, inference_mode=False):
         """Apply layers that may not require rng in parallel.
-        
-        :param self: ParallelRng layer.
+
         :param x: PyTree of input features, same structure as ``layers`` with
             MLAX Modules as leaves.
         :param rng: PRNG key.

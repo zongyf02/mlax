@@ -47,11 +47,11 @@ class Linear(Module):
         self.initialized = False
 
         self._rng =  Parameter(trainable=False, data=rng)
-        self._out_features = int(out_features)
+        self._out_features = out_features
         self._kernel_initializer = kernel_initializer
         self._dtype = _canon_dtype(dtype)
         
-        self.transposed_kernel = bool(transposed_kernel)
+        self.transposed_kernel = transposed_kernel
         self.kernel_weight = Parameter(trainable=True)
         self.precision = _canon_precision_pair(precision)
         self.accum_dtype = _canon_opt_dtype(accum_dtype)
@@ -79,8 +79,7 @@ class Linear(Module):
     
     def __call__(self, x, rng=None, inference_mode=False):
         """Apply linear transformation to input features.
-        
-        :param self: Linear layer.
+
         :param x: Input features. Must be of the shape ``(..., in_features,)``.
         :param rng: PRNG key. Ignored. Default: None.
         :param inference_mode: Whether in inference or training mode. Ignored.

@@ -6,6 +6,10 @@ from jax import (
     nn,
     lax
 )
+from mlax import (
+    fwd,
+    is_trainable
+)
 from mlax.nn import Parallel, ParallelRng, Scaler, F, FRng
 import pytest
 
@@ -62,18 +66,17 @@ def test_parallel(
         layers
     )
 
-    fwd = jax.jit(
+    fwd_jit = jax.jit(
         jax.vmap(
-            Parallel.fwd,
+            fwd,
             in_axes = (None, None, 0, None, None),
             out_axes = (0, None)
         ),
         static_argnames="inference_mode"
     )
 
-    activations, model = fwd(
-        model,
-        model.trainables,
+    activations, model = fwd_jit(
+        *model.partition(),
         input,
         None, # rng
         False # inference_mode
@@ -87,9 +90,8 @@ def test_parallel(
         )
     )
     
-    activations, model = fwd(
-        model,
-        model.trainables,
+    activations, model = fwd_jit(
+        *model.partition(),
         input,
         None, # rng
         True # inference_mode
@@ -163,20 +165,19 @@ def test_parallel_rng(
         layers
     )
 
-    fwd = jax.jit(
+    fwd_jit = jax.jit(
         jax.vmap(
-            ParallelRng.fwd,
+            fwd,
             in_axes = (None, None, 0, None, None),
             out_axes = (0, None)
         ),
         static_argnames="inference_mode"
     )
 
-    activations, model = fwd(
-        model,
-        model.trainables,
+    activations, model = fwd_jit(
+        *model.partition(),
         input,
-        rng,
+        rng, # rng
         False # inference_mode
     )
     assert jtu.tree_reduce(
@@ -188,11 +189,10 @@ def test_parallel_rng(
         )
     )
 
-    activations, model = fwd(
-        model,
-        model.trainables,
+    activations, model = fwd_jit(
+        *model.partition(),
         input,
-        rng,
+        rng, # rng
         True # inference_mode
     )
     assert jtu.tree_reduce(

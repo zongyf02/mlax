@@ -5,6 +5,10 @@ from jax import (
     nn,
     lax
 )
+from mlax import (
+    fwd,
+    is_trainable
+)
 from mlax.nn import Embed
 import pytest
 
@@ -86,18 +90,17 @@ def test_embed(
         expected_embed_weight
     ).all()
 
-    fwd = jax.jit(
+    fwd_jit = jax.jit(
         jax.vmap(
-            Embed.fwd,
+            fwd,
             in_axes = (None, None, 0, None, None),
             out_axes = (0, None)
         ),
         static_argnames="inference_mode"
     )
 
-    activations, embed = fwd(
-        embed,
-        embed.trainables,
+    activations, embed = fwd_jit(
+        *embed.partition(),
         input,
         None, # rng
         False # inference_mode

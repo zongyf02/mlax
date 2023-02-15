@@ -5,6 +5,10 @@ from jax import (
     nn,
     lax
 )
+from mlax import (
+    fwd,
+    is_trainable
+)
 from mlax.nn import Linear
 import pytest
 
@@ -66,18 +70,17 @@ def test_linear(
     )
     assert linear.kernel_weight.data is None
 
-    fwd = jax.jit(
+    fwd_jit = jax.jit(
         jax.vmap(
-            Linear.fwd,
+            fwd,
             in_axes = (None, None, 0, None, None),
             out_axes = (0, None)
         ),
         static_argnames="inference_mode"
     )
 
-    activations, linear = fwd(
-        linear,
-        linear.trainables,
+    activations, linear = fwd_jit(
+        *linear.partition(),
         input,
         None, # rng
         False # inference_mode

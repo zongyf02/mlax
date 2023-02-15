@@ -22,8 +22,7 @@ class Series(Module):
     
     def __call__(self, x, rng=None, inference_mode=False):
         """Apply layers that do not require rng in series.
-        
-        :param self: Series layer.
+
         :param x: Input features.
         :param rng: PRNG key. Ignored. Default: None.
         :param inference_mode: Whether in inference or training mode. Default:
@@ -58,8 +57,7 @@ class SeriesRng(Module):
     
     def __call__(self, x, rng, inference_mode=False):
         """Apply layers that may not require rng in series.
-        
-        :param self: SeriesRng layer.
+
         :param x: Input features.
         :param rng: PRNG key.
         :param inference_mode: Whether in inference or training mode. Default:

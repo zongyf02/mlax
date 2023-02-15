@@ -5,7 +5,8 @@ MLAX modules inherit from ``mlax.Module``. They are PyTree nodes whose children
 are parameters and other modules. Everything else is auxiliary data.
 
 MLAX parameters inherit from ``mlax.Parameter``. They are also PyTree nodes
-whose children is ``parameter.data``. ``parameter.trainable`` is auxiliary data.
+whose children is ``parameter.data``. ``parameter.trainable`` and
+``parameter.name`` are auxiliary data.
 
 Parameters must contain valid JAX types (``jax.Array``, ``np.array``, etc.) or
 PyTrees of valid JAX types if they were to be used in a jit-compiled module.
@@ -65,19 +66,17 @@ were to be used inside ``jax.jit``.
             # self.e = x # Not ok, updating hyperparameter to a traced value.
             self.f += 1 # Allowed, but all subsequent calls will be retraced. Better to make self.f a Parameter.
 
-To get a snapshot of a module's trainable parameters, use
-``trainables = module.trainables``. ``trainables`` will be assigned a list of
-all Parameters whose ``trainable=True``. Later mutations of ``module`` will not
-be reflected in ``trainables``.
+A module can be treated like any other PyTree, but ``mlax.Module`` has some
+convenience functions to help filter, partition, and combine modules.
 
-Similarly, to get a snapshot of a module's non-trainable parameters, use
-``non_trainables = module.non_trainables``. ``non_trainables`` will be assigned
-a list of all Parameters whose ``trainable=False``. Later mutations of
-``module`` will not be reflected in ``non_trainables``.
+To get a copy of a module's trainable parameters, use
+``trainables = module.filter(f=is_trainable)``.
 
-Use ``mlax.Module.load_trainables`` and ``mlax.Module.load_non_trainables`` to
-return a new instance of the module whose trainables and non-trainables are
-overwritten.
+To partition a module into trainnable and non-trainable parameters, use
+``trainables, non_trainables = module.partition(f=is_trainable)``.
+
+To ``mlax.Module.combine`` to combine partitioned modules:
+``module = trainables.combine(non_trainables)``.
 
 To define a custom layer, inherit from ``mlax.Module`` and implement the
 ``__call__(self, x, rng, inference_mode=False)`` or

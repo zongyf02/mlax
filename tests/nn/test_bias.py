@@ -5,6 +5,10 @@ from jax import (
     nn,
     lax
 )
+from mlax import (
+    fwd,
+    is_trainable
+)
 from mlax.nn import Bias
 import pytest
 
@@ -57,18 +61,17 @@ def test_bias(
     )
     assert bias.bias_weight.data is None
 
-    fwd = jax.jit(
+    fwd_jit = jax.jit(
         jax.vmap(
-            Bias.fwd,
+            fwd,
             in_axes = (None, None, 0, None, None),
             out_axes = (0, None)
         ),
         static_argnames="inference_mode"
     )
 
-    activations, bias = fwd(
-        bias,
-        bias.trainables,
+    activations, bias = fwd_jit(
+        *bias.partition(),
         input,
         None, # rng
         False # inference_mode

@@ -52,7 +52,7 @@ class BatchNorm(Module):
         super().__init__()
         self.initialized = False
 
-        self._rng =  Parameter(trainable=False, data=rng)
+        self._rng = Parameter(trainable=False, data=rng)
         self._mean_initializer = mean_initializer
         self._var_initializer = var_initializer
         self._dtype = _canon_dtype(dtype)
@@ -63,9 +63,9 @@ class BatchNorm(Module):
         )
         self.moving_mean = Parameter(trainable=False)
         self.moving_var = Parameter(trainable=False)
-        self.epsilon = float(epsilon)
-        self.momentum = float(momentum)
-        self.channel_last = bool(channel_last)
+        self.epsilon = epsilon
+        self.momentum = momentum
+        self.channel_last = channel_last
         
 
     def _build(self, x):
@@ -84,8 +84,7 @@ class BatchNorm(Module):
     
     def __call__(self, x, rng=None, inference_mode=False):
         """Apply batch normalization to input features.
-        
-        :param self: BatchNorm layer.
+
         :param x: Input features. Must be compatible with ``channel_last``.
         :param rng: PRNG key. Ignored. Default: None.
         :param inference_mode: Whether in inference or training mode. Ignored.
