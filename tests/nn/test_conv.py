@@ -104,7 +104,7 @@ def test_linear(
     )
 
     activations, conv = fwd_jit(
-        *conv.partition(is_trainable),
+        *conv.partition(),
         input,
         None, # rng
         False # inference_mode

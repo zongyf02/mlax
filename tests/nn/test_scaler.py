@@ -71,7 +71,7 @@ def test_scaling(
     )
 
     activations, scaling = fwd_jit(
-        *scaling.partition(is_trainable),
+        *scaling.partition(),
         input,
         None, # rng
         False # inference_mode

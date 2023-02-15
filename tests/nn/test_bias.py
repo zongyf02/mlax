@@ -71,7 +71,7 @@ def test_bias(
     )
 
     activations, bias = fwd_jit(
-        *bias.partition(is_trainable),
+        *bias.partition(),
         input,
         None, # rng
         False # inference_mode

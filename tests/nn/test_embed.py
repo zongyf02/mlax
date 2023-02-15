@@ -100,7 +100,7 @@ def test_embed(
     )
 
     activations, embed = fwd_jit(
-        *embed.partition(is_trainable),
+        *embed.partition(),
         input,
         None, # rng
         False # inference_mode

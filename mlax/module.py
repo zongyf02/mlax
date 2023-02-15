@@ -2,7 +2,7 @@ import jax
 from jax import (
     tree_util as jtu
 )
-from typing import Any, Hashable
+from typing import Any, Hashable, Callable
 
 @jtu.register_pytree_node_class
 class Parameter:
@@ -95,7 +95,7 @@ class Module(metaclass=_ModuleMeta):
             repr += f"{name}={value}, "
         return repr[:-1] + ")"
 
-    def filter(self, f, *rest):
+    def filter(self, f: Callable[[Parameter], bool], *rest):
         """Apply a filter ``f`` on ``self``'s parameters. Filtered out
         parameters are replaced with a Parameter whose ``trainable = None``.
         """
@@ -103,7 +103,7 @@ class Module(metaclass=_ModuleMeta):
             _create_true_filter(f), self, *rest, is_leaf=is_parameter
         )
 
-    def partition(self, f, *rest):
+    def partition(self, f: Callable[[Parameter], bool] = is_trainable, *rest):
         """Partition on ``self``'s parameters on filter ``f`` on ``self``'s
         parameters. Unselected parameters are replaced with a Parameter whose
         ``trainable = None``.

@@ -106,7 +106,7 @@ def test_batch_norm(
     )
 
     activations, batch_norm = fwd_jit(
-        *batch_norm.partition(is_trainable),
+        *batch_norm.partition(),
         input,
         None, # rng
         inference_mode # inference_mode

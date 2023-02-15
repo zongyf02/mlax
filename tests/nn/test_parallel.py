@@ -76,7 +76,7 @@ def test_parallel(
     )
 
     activations, model = fwd_jit(
-        *model.partition(is_trainable),
+        *model.partition(),
         input,
         None, # rng
         False # inference_mode
@@ -91,7 +91,7 @@ def test_parallel(
     )
     
     activations, model = fwd_jit(
-        *model.partition(is_trainable),
+        *model.partition(),
         input,
         None, # rng
         True # inference_mode
@@ -175,7 +175,7 @@ def test_parallel_rng(
     )
 
     activations, model = fwd_jit(
-        *model.partition(is_trainable),
+        *model.partition(),
         input,
         rng, # rng
         False # inference_mode
@@ -190,7 +190,7 @@ def test_parallel_rng(
     )
 
     activations, model = fwd_jit(
-        *model.partition(is_trainable),
+        *model.partition(),
         input,
         rng, # rng
         True # inference_mode

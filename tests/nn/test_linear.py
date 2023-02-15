@@ -80,7 +80,7 @@ def test_linear(
     )
 
     activations, linear = fwd_jit(
-        *linear.partition(is_trainable),
+        *linear.partition(),
         input,
         None, # rng
         False # inference_mode

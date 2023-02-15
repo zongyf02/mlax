@@ -61,7 +61,7 @@ def test_series(
     )
 
     activations, model = fwd_jit(
-        *model.partition(is_trainable),
+        *model.partition(),
         input,
         None, # rng
         False # inference_mode
@@ -72,7 +72,7 @@ def test_series(
     ).all()
     
     activations, model = fwd_jit(
-        *model.partition(is_trainable),
+        *model.partition(),
         input,
         None, # rng
         True # inference_mode
@@ -136,7 +136,7 @@ def test_series_rng(
     )
 
     activations, model = fwd_jit(
-        *model.partition(is_trainable),
+        *model.partition(),
         input,
         rng, # rng
         False # inference_mode
@@ -151,7 +151,7 @@ def test_series_rng(
     )
 
     activations, model = fwd_jit(
-        *model.partition(is_trainable),
+        *model.partition(),
         input,
         rng, # rng
         True # inference_mode
