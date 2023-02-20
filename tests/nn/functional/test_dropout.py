@@ -13,7 +13,7 @@ import pytest
             random.normal(random.PRNGKey(0), (2, 4, 3), jnp.float16),
             {
                 "rng": random.PRNGKey(1),
-                "prob": 1.0
+                "rate": 0.0
             },
             random.normal(random.PRNGKey(0), (2, 4, 3), jnp.float16)
         )
