@@ -279,28 +279,6 @@ def dot_product_attention_logits(
         lax.convert_element_type(sqrt(query.shape[-1]), logits.dtype)
     )
 
-def apply_attention_mask(
-    logits: jax.Array,
-    mask: jax.Array,
-    masked_value=-jax.numpy.inf
-):
-    """Apply attention mask to logits.
-
-    :param logits: Attention logits of shape
-        ``(num_heads, query_length, key_value_length)``.
-    :param mask: Mask array of same shape as ``logits``. Must be boolean or
-        integer type.
-    :param masked_value: Value that will be taken by the masked logits. Default:
-        -inf, minimum value allowed by ``logits``' type.
-    
-    :returns logits: ``logits`` with ``mask`` applied.
-    """
-    masked_value = lax.full_like(
-        logits,
-        lax.convert_element_type(masked_value, logits.dtype),
-    )
-    return lax.select(mask, logits, masked_value)
-
 def apply_attention_weights(
     value: jax.Array,
     attention_weights: jax.Array
@@ -325,7 +303,7 @@ def apply_attention_weights(
 def layer_norm(x, epsilon=1e-05):
     """Apply layer normalization.
 
-    :param x: Input features, either in channel-first or channel-last format.
+    :param x: Input features.
     :param epsilon: Small number added to variance to avoid divisions by zero.
         Default: 1e-05.
     
