@@ -13,45 +13,38 @@ from mlax import (
 from mlax.nn import Parallel, ParallelRng, Scaler, F, FRng
 import pytest
 
-key = random.PRNGKey(0)
-
 @pytest.mark.parametrize(
     "layers,input,expected_train_output,expected_infer_output",
     [
         (
-            [
+            (
                 Scaler(
-                    key,
+                    random.PRNGKey(0),
                     in_features=-1, 
                     scaler_initializer=nn.initializers.constant(2)
                 ),
-                [
-                    F(
-                        train_fn=lambda x: x,
-                        infer_fn=lambda x: 2 * x
-                    ),
-                    F(
-                        train_fn=lambda x: 3 * x
-                    )
-                ]
-            ],
+                F(
+                    train_fn=lambda x: x,
+                    infer_fn=lambda x: 2 * x
+                ),
+                F(
+                    train_fn=lambda x: 3 * x
+                )
+            ),
             [
                 jnp.ones((2, 4), jnp.bfloat16),
-                [jnp.ones((2, 3), jnp.bfloat16), jnp.ones((2, 2), jnp.float32)]
+                jnp.ones((2, 3), jnp.bfloat16),
+                jnp.ones((2, 2), jnp.float32)
             ],
             [
                 jnp.full((2, 4), 2, jnp.bfloat16),
-                [
-                    jnp.ones((2, 3), jnp.bfloat16),
-                    jnp.full((2, 2), 3, jnp.float32)
-                ]
+                jnp.ones((2, 3), jnp.bfloat16),
+                jnp.full((2, 2), 3, jnp.float32)
             ],
             [
                 jnp.full((2, 4), 2, jnp.bfloat16),
-                [
-                    jnp.full((2, 3), 2, jnp.bfloat16),
-                    jnp.full((2, 2), 3, jnp.float32)
-                ]
+                jnp.full((2, 3), 2, jnp.bfloat16),
+                jnp.full((2, 2), 3, jnp.float32)
             ]
         ),
     ]
@@ -109,47 +102,41 @@ def test_parallel(
     "layers,input,rng,expected_train_output,expected_infer_output",
     [
         (
-            [
+            iter((
                 Scaler(
-                    key,
+                    random.PRNGKey(0),
                     in_features=-1, 
                     scaler_initializer=nn.initializers.constant(2)
                 ),
-                [
-                    F(
-                        train_fn=lambda x: x,
-                        infer_fn=lambda x: 2 * x
-                    ),
-                    FRng(
-                        train_fn=lambda x, rng: (3 * x, rng)
-                    )
-                ]
-            ],
+                F(
+                    train_fn=lambda x: x,
+                    infer_fn=lambda x: 2 * x
+                ),
+                FRng(
+                    train_fn=lambda x, rng: (3 * x, rng)
+                )
+            )),
             [
                 jnp.ones((2, 4), jnp.bfloat16),
-                [jnp.ones((2, 3), jnp.bfloat16), jnp.ones((2, 2), jnp.float32)]
+                jnp.ones((2, 3), jnp.bfloat16),
+                jnp.ones((2, 2), jnp.float32)
             ],
             random.PRNGKey(1),
             [
                 jnp.full((2, 4), 2, jnp.bfloat16),
-                [
-                    jnp.ones((2, 3), jnp.bfloat16),
-                    (
-                        jnp.full((2, 2), 3, jnp.float32),
-                        jnp.stack([random.PRNGKey(1), random.PRNGKey(1)])
-                    )
-                    
-                ]
+                jnp.ones((2, 3), jnp.bfloat16),
+                (
+                    jnp.full((2, 2), 3, jnp.float32),
+                    jnp.stack([random.PRNGKey(1), random.PRNGKey(1)])
+                )
             ],
             [
                 jnp.full((2, 4), 2, jnp.bfloat16),
-                [
-                    jnp.full((2, 3), 2, jnp.bfloat16),
-                    (
-                        jnp.full((2, 2), 3, jnp.float32),
-                        jnp.stack([random.PRNGKey(1), random.PRNGKey(1)])
-                    )
-                ]
+                jnp.full((2, 3), 2, jnp.bfloat16),
+                (
+                    jnp.full((2, 2), 3, jnp.float32),
+                    jnp.stack([random.PRNGKey(1), random.PRNGKey(1)])
+                )
             ]
         ),
     ]

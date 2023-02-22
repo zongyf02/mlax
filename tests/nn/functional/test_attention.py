@@ -1,6 +1,5 @@
 from mlax.nn.functional import (
     dot_product_attention_logits,
-    apply_attention_mask,
     apply_attention_weights
 )
 import jax.numpy as jnp
@@ -53,11 +52,10 @@ def test_dot_product_attention(
         expected_logits
     ).all()
 
-    weights = nn.softmax(
-        apply_attention_mask(
-            logits, mask
-        )
+    logits = jnp.where(
+        mask, logits, lax.convert_element_type(-jnp.inf, logits.dtype)
     )
+    weights = nn.softmax(logits)
     assert lax.eq(
         weights,
         expected_weights

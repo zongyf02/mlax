@@ -1,23 +1,17 @@
 from jax import random
-from typing import Sequence
-from mlax import Parameter, Module
+from typing import Iterable
+from mlax import Module, ModuleSeq
 from mlax._utils import _needs_rng
 
 class Series(Module):
     """Combination of layers that do not require rng in series."""
-    def __init__(
-        self,
-        layers: Sequence[Module]
-    ):
-        """Initialize a series layer.
+    def __init__(self, layers: Iterable[Module]):
+        """Initialize a Series layer.
 
         :param layers: Layers to combine in series.
         """
         super().__init__()
-        self.layers = Parameter(
-            trainable=True,
-            data=layers
-        )
+        self.layers = ModuleSeq(submodules=layers)
         
     
     def __call__(self, x, rng=None, inference_mode=False):
@@ -32,28 +26,19 @@ class Series(Module):
         :returns: Series layer with updated state. Possibly the same object as
             ``self``.
         """
-        new_layers = []
-        for layer in self.layers.data:
-            x, layer = layer(x, None, inference_mode)
-            new_layers.append(layer)
-        self.layers.data = new_layers
+        for i, layer in enumerate(self.layers):
+            x, self.layers[i] = layer(x, None, inference_mode)
         return x, self
 
 class SeriesRng(Module):
     """Combination of layers that may require rng in series."""
-    def __init__(
-        self,
-        layers: Sequence[Module]
-    ):
-        """Initialize a series layer.
+    def __init__(self, layers: Iterable[Module]):
+        """Initialize a SeriesRNG layer.
 
         :param layers: Layers to combine in series.
         """
         super().__init__()
-        self.layers = Parameter(
-            trainable=True,
-            data=layers
-        )
+        self.layers = ModuleSeq(submodules=layers)
     
     def __call__(self, x, rng, inference_mode=False):
         """Apply layers that may not require rng in series.
@@ -67,21 +52,16 @@ class SeriesRng(Module):
         :returns: SeriesRng layer with updated state. Possibly the same object
             as ``self``.
         """
-        layers = self.layers.data
-        needs_rngs = [_needs_rng(layer) for layer in layers]
+        needs_rngs = [_needs_rng(layer) for layer in self.layers]
         num_rngs = sum(needs_rngs)
         if num_rngs > 1:
             rng_iter = iter(random.split(rng, num_rngs))
         else:
             rng_iter = iter([rng])
 
-        new_layers = []
-        for needs_rng, layer in zip(needs_rngs, layers):
+        for i, (needs_rng, layer) in enumerate(zip(needs_rngs, self.layers)):
             if needs_rng:
-                x, layer = layer(x, next(rng_iter), inference_mode)
+                x, self.layers[i] = layer(x, next(rng_iter), inference_mode)
             else:
-                x, layer = layer(x, None, inference_mode)
-            new_layers.append(layer)
-
-        self.layers.data = layers
+                x, self.layers[i] = layer(x, None, inference_mode)
         return x, self

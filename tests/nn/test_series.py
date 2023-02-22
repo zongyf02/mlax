@@ -13,20 +13,18 @@ from mlax import (
 from mlax.nn import Series, SeriesRng, Linear, Bias, F, FRng
 import pytest
 
-key = random.PRNGKey(0)
-
 @pytest.mark.parametrize(
     "layers,input,expected_train_output,expected_infer_output",
     [
         (
             [
                 Linear(
-                    key,
+                    random.PRNGKey(0),
                     out_features=3,
                     kernel_initializer=nn.initializers.ones
                 ),
                 Bias(
-                    key,
+                    random.PRNGKey(0),
                     in_features=-1, 
                     bias_initializer=nn.initializers.ones
                 ),
@@ -86,14 +84,14 @@ def test_series(
     "layers,input,rng,expected_train_output,expected_infer_output",
     [
         (
-            [
+            iter([
                 Linear(
-                    key,
+                    random.PRNGKey(0),
                     out_features=3,
                     kernel_initializer=nn.initializers.ones
                 ),
                 Bias(
-                    key,
+                    random.PRNGKey(0),
                     in_features=-1, 
                     bias_initializer=nn.initializers.ones
                 ),
@@ -101,7 +99,7 @@ def test_series(
                     train_fn=lambda x, rng: (x, rng),
                     infer_fn=lambda x, rng: (2 * x, rng)
                 )
-            ],
+            ]),
             jnp.ones((2, 4), jnp.bfloat16),
             random.PRNGKey(1),
             (

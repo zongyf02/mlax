@@ -28,6 +28,14 @@ mlax.nn.conv module
    :undoc-members:
    :show-inheritance:
 
+mlax.nn.embed module
+--------------------
+
+.. automodule:: mlax.nn.embed
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 mlax.nn.f module
 ----------------
 
