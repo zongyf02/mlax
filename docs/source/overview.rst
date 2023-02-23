@@ -19,16 +19,12 @@ This means MLAX is fully compatible with native JAX transformations, notably:
 Why MLAX?
 ---------
 
-Compared to existing libraries such as Flax and Haiku,
+Compared to existing JAX libraries,
 
 #. MLAX stores parameters in the modules themselves rather than in a separate structure, making layer development and parameter surgery easier.
-#. MLAX does not require sepcial versions ``grad``, ``vmap``, ``pmap``, and ``jit``, making it easier to learn and integrate with other JAX libraries.
-
-Compared to other PyTree module-based libraries such as Equinox and Treex,
-
+#. MLAX does not require special versions ``grad``, ``vmap``, ``pmap``, and ``jit``, making it easier to learn and integrate with other JAX libraries.
 #. MLAX employs an explicit state management system with minimal magic, keeping the code purely functional. If you mutated something, you must return it!
 #. MLAX allows parameters and hyperparameters to be updated in the forward pass, making it easy to develop layers like BatchNorm.
-#. MLAX never partitions or returns partial modules, guaranteeing all modules to be callable.
 
 Installation
 -------------

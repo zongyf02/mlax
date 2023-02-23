@@ -10,8 +10,8 @@ Neural Network Layers
 .. note::
     Each meta-layer has two variants. ``mlax.nn.<layer>``, which assumes its
     layers' ``__call__`` do not require a PRNGKey and whose ``__call__``
-    does not require a PRNGKey and , and ``mlax.nn.<layer>Rng``, which does not
-    make such assumption and whose ``__call__`` requires a PRNGKey.
+    does not require a PRNGKey, and ``mlax.nn.<layer>Rng``, which does not
+    make such assumptions and whose ``__call__`` requires a PRNGKey.
     
     When possible, use the former as it is slightly more efficient.
 
@@ -25,5 +25,5 @@ Finally, ``mlax.nn.functional`` contains pure JAX functions such as
 ``mlax.nn.functional.dot_product_attention_logits``.
 
 .. note::   
-    For maximum flexbility, all layers and functions assume their input to be
+    For maximum flexibility, all layers and functions assume their input to be
     unbatched. Use ``jax.vmap`` to add any batch dimension.

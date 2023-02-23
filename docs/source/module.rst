@@ -4,7 +4,7 @@ Modules and Parameters
 MLAX modules inherit from ``mlax.Module``. They are PyTrees whose children
 are parameters and other modules. Everything else is auxiliary data.
 
-MLAX parameters inherit from ``mlax.Parameter``. They are PyTrees that wraps
+MLAX parameters inherit from ``mlax.Parameter``. They are PyTrees that wrap
 some ``data``. ``trainable`` and ``name`` are auxiliary metadata.
 
 Parameters must wrap valid JAX types (``jax.Array``, ``np.array``, etc.) or
@@ -18,7 +18,7 @@ However, they should not wrap submodules. Otherwise, ``mlax.Module``'s ``map``,
 ``filter``, and ``partition`` functions may not work properly.
 
 .. note::
-    This is because those functions treat paramters as leaf nodes of the module
+    This is because those functions treat parameters as leaf nodes of the module
     PyTree. Thus they will not recursively flatten any submodule wrapped by a
     parameter.
 
@@ -36,9 +36,9 @@ to be used in a jit-compiled module.
     arguments.
 
 .. warning::
-    MLAX modules uses ``vars()`` to determine its fields during flattening and
+    MLAX modules use ``vars()`` to determine their fields during flattening and
     unflattening. This means all variables must be stored in ``__dict__``.
-    Avoid stroing variables in ``__slots__``.
+    Avoid storing variables in ``__slots__``.
 
 .. code-block:: python
 
@@ -85,7 +85,7 @@ In ``__call__``, parameters can be directly mutated, provided that the updated
 
 .. warning::
     Ensure a module's ``__call__`` returns not only the result on the forward
-    pass, but also the updated ``self``.
+    pass but also the updated ``self``.
 
 Hyperparameters can be mutated, but they must be assigned static values if they
 were to be used inside ``jax.jit``.
@@ -118,12 +118,12 @@ To map a function over all parameters, use ``new_module = module.map(f)``.
     parameter PyTrees, which is desirable if one wishes to access their metadata
     (``trainable`` and ``name``).
 
-To filter a module's parameters, for example to get only the trainable
+To filter a module's parameters, for example, to get only the trainable
 parameters, use ``trainables = module.filter(f=is_trainable)``. ``trainables``
 is identical to ``module`` except that non-trainable parameters are replaced
 with a special value: ``mlax.Parameter(trainable=None, data=None)``.
 
-To partition a module, for example into trainable and non-trainable parameters,
+To partition a module, for example, into trainable and non-trainable parameters,
 use ``trainables, non_trainables = module.partition(f=is_trainable)``.
 ``trainables`` and ``non_trainables`` are identical to ``module`` except that
 non-trainable parameters in ``trainables`` and trainable parameters in
