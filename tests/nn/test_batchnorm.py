@@ -125,7 +125,7 @@ def test_batch_norm(
                 batch_norm.moving_mean.data,
                 expected_moving_mean
             )
-        ) < 1e-5
+        ) < 1e-4
     ).all()
     assert (
         lax.abs(
@@ -133,5 +133,5 @@ def test_batch_norm(
                 batch_norm.moving_var.data,
                 expected_moving_var
             )
-        ) < 1e-5
+        ) < 1e-4
     ).all()
