@@ -5,15 +5,12 @@ from jax import (
     nn,
     lax
 )
-from mlax import (
-    fwd,
-    is_trainable
-)
-from mlax.nn import Linear
 import pytest
+from mlax.nn import Linear
+from mlax._test_utils import layer_test_results, assert_equal_array
 
 @pytest.mark.parametrize(
-    "config,input,expected_output,expected_kernel_weight",
+    "config,x,expected_output,expected_linear_kernel",
     [
         (
             {
@@ -31,7 +28,7 @@ import pytest
         ),
         (
             {
-                "rng": random.PRNGKey(0),
+                "rng": random.PRNGKey(1),
                 "out_features": 3,
                 "precision": lax.Precision.HIGHEST,
                 "transposed_kernel": False,
@@ -43,54 +40,30 @@ import pytest
             jnp.full((4, 3), 5, jnp.float32),
             jnp.ones((5, 3), jnp.float32)
         ),
-                (
+        (
             {
-                "rng": random.PRNGKey(1),
+                "rng": random.PRNGKey(2),
                 "out_features": 4,
                 "precision": "float32",
                 "transposed_kernel": True,
                 "kernel_initializer": nn.initializers.constant(2, jnp.float16),
                 "accum_dtype": jnp.float32,
-                "dtype": jnp.float32
+                "dtype": jnp.bfloat16
             },
             jnp.ones((3, 4), jnp.bfloat16),
             jnp.full((3, 4), 8, jnp.float32),
-            jnp.full((4, 4), 2, jnp.float32)
+            jnp.full((4, 4), 2, jnp.bfloat16)
         ),
     ]
 )
-def test_linear(
-    config,
-    input,
-    expected_output,
-    expected_kernel_weight
-):
-    linear = Linear(
-        **config
+def test_linear(config, x, expected_output, expected_linear_kernel):
+    layer, (t_acts, new_t_layer), (i_acts, new_i_layer) = layer_test_results(
+        Linear, config, x
     )
-    assert linear.kernel_weight.data is None
+    assert_equal_array(layer.linear_kernel.data, expected_linear_kernel)
 
-    fwd_jit = jax.jit(
-        jax.vmap(
-            fwd,
-            in_axes = (None, None, 0, None, None),
-            out_axes = (0, None)
-        ),
-        static_argnames="inference_mode"
-    )
+    assert_equal_array(t_acts, expected_output)
+    assert_equal_array(new_t_layer.linear_kernel.data, expected_linear_kernel)
 
-    activations, linear = fwd_jit(
-        *linear.partition(),
-        input,
-        None, # rng
-        False # inference_mode
-    )
-    assert lax.eq(
-        activations,
-        expected_output
-    ).all()
-
-    assert lax.eq(
-        linear.kernel_weight.data,
-        expected_kernel_weight
-    ).all()
+    assert_equal_array(i_acts, expected_output)
+    assert_equal_array(new_i_layer.linear_kernel.data, expected_linear_kernel)

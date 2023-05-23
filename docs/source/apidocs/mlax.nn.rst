@@ -4,14 +4,6 @@ mlax.nn package
 Submodules
 ----------
 
-mlax.nn.batchnorm module
-------------------------
-
-.. automodule:: mlax.nn.batchnorm
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 mlax.nn.bias module
 -------------------
 
@@ -80,6 +72,14 @@ mlax.nn.series module
 ---------------------
 
 .. automodule:: mlax.nn.series
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+mlax.nn.z\_norm module
+----------------------
+
+.. automodule:: mlax.nn.z_norm
    :members:
    :undoc-members:
    :show-inheritance:

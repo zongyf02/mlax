@@ -1,5 +1,6 @@
-import jax
 from jax import (
+    Array,
+    numpy as jnp,
     random,
     lax
 )
@@ -7,12 +8,13 @@ from mlax._utils import (
     _canon_int_sequence,
     _canon_opt_int_sequence,
     _canon_padding,
-    _normalize
+    _compute_std_stats,
+    _standadize
 )
 from math import prod, sqrt
-from typing import Any, Tuple, Sequence, Union, Callable, Optional
+from typing import Any, Tuple, Sequence, Union, Callable, Optional, Hashable
 
-def identity(x: jax.Array) -> jax.Array:
+def identity(x: Any) -> Any:
     """Identity function.
     
     :param x: Input features.
@@ -22,30 +24,34 @@ def identity(x: jax.Array) -> jax.Array:
     return x
 
 def dropout(
-    x: jax.Array,
+    x: Array,
     rng: Any,
-    rate: float
-) -> jax.Array:
+    rate: float,
+    axis: Union[int, Sequence[int]]
+) -> Array:
     """Apply random dropouts to input features.
 
     :param x: Input features.
     :param rng: PRNG key for randomizing dropouts.
     :param rate: Probability at which each element is droped out. Must be in
         [0, 1).
+    :param axis: Axis or sequence of axes to drop features along.
 
     :returns y: ``x`` with dropouts applied.
     """
+    axis = _canon_int_sequence(axis, 1)
     prob = 1.0 - rate
-    mask = random.bernoulli(rng, prob, x.shape)
-    zeros = lax.full_like(x, 0)
+    mask = lax.broadcast_in_dim(
+        random.bernoulli(rng, prob, [x.shape[i] for i in axis]), x.shape, axis
+    )
     return lax.select(
         mask,
         lax.div(x, lax.convert_element_type(prob, x.dtype)),
-        zeros
+        lax.full_like(x, 0)
     )
 
 def pool(
-    x: jax.Array,
+    x: Array,
     init_value: Any,
     reduce_fn: Callable[[Any, Any], Any],
     window_shape: Union[int, Sequence[int]],
@@ -53,8 +59,8 @@ def pool(
     padding: Union[str, int, Sequence[Union[int, Tuple[int, int]]]] = "VALID",
     input_dilation: Optional[Union[int, Sequence[int]]] = None,
     window_dilation: Optional[Union[int, Sequence[int]]] = None,
-    channel_last: bool=False
-) -> jax.Array:
+    data_format: str="channel_last"
+) -> Array:
     """Apply an arbitrary reduce function over poolings windows of input
         features.
 
@@ -86,11 +92,13 @@ def pool(
         integers, specifying the window dilation rate in each spatial dimension.
         See the ``window_dilation`` parameter of `jax.lax.reduce_window`_.
         Default: None, no window dilation.
-    :param channel_last: Whether features are channel-last or first. Default:
-        False, channel-first.
-    
+    :param data_format: "channel_last", "channel_first", or a string
+        representing the kernel spec as described in
+        ``jax.lax.conv_general_dilated``, but  without `N` the batch dimension.
+        Default: "channel_last".
+
     :returns y: ``x`` with pooling applied.
-    
+
     .. _jax.lax.reduce_window:
         https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.reduce_window.html
     """
@@ -101,7 +109,7 @@ def pool(
     input_dilation = _canon_opt_int_sequence(input_dilation, n_spatial_dims)
     window_dilation = _canon_opt_int_sequence(window_dilation, n_spatial_dims)
 
-    if channel_last:
+    if data_format == "channel_last":
         window_shape = window_shape + (1,)
         strides = strides + (1,)
         padding = padding + ((0, 0),) if isinstance(padding, tuple) else padding
@@ -113,7 +121,7 @@ def pool(
             window_dilation + (1,) if isinstance(window_dilation, tuple)
             else window_dilation
         )
-    else:
+    elif data_format == "channel_first":
         window_shape = (1,) + window_shape
         strides = (1,) + strides
         padding = ((0, 0),) + padding if isinstance(padding, tuple) else padding
@@ -124,6 +132,26 @@ def pool(
         window_dilation = (
             (1,) + window_dilation if isinstance(window_dilation, tuple) else
             window_dilation
+        )
+    else:
+        channel_dim = data_format.index("C")
+        window_shape = (
+            window_shape[:channel_dim] + (1,) + window_shape[channel_dim:]
+        )
+        strides = (
+            strides[:channel_dim] + (1,) + strides[channel_dim:]
+        )
+        padding = (
+            padding[:channel_dim] + ((0, 0),) + padding[channel_dim:]
+            if isinstance(padding, tuple) else padding
+        )
+        input_dilation = (
+            input_dilation[:channel_dim] + (1,) + input_dilation[channel_dim:]
+            if isinstance(input_dilation, tuple) else input_dilation
+        )
+        window_dilation = (
+            window_dilation[:channel_dim] + (1,) + window_dilation[channel_dim:]
+            if isinstance(window_dilation, tuple) else window_dilation
         )
 
     return lax.reduce_window(
@@ -138,14 +166,14 @@ def pool(
     )
 
 def max_pool(
-    x: jax.Array,
+    x: Array,
     window_shape: Union[int, Sequence[int]],
     strides: Union[int, Sequence[int]] = 1,
     padding: Union[str, int, Sequence[Union[int, Tuple[int, int]]]] = "VALID",
     input_dilation: Optional[Union[int, Sequence[int]]] = None,
     window_dilation: Optional[Union[int, Sequence[int]]] = None,
-    channel_last: bool=False
-) -> jax.Array:
+    data_format: str="channel_last"
+) -> Array:
     """Apply max pooling over input features.
 
     :param x: Input features. Must have be unbatched thus having
@@ -157,32 +185,34 @@ def max_pool(
         Default: None, no input dilation.
     :param window_dilation: See the ``window_dilation`` parameter of
         ``pooling``. Default: None, no window dilation.
-    :param channel_last: Whether features are channel-last or first. Default:
-        False, channel-first.
+    :param data_format: "channel_last", "channel_first", or a string
+        representing the kernel spec as described in
+        ``jax.lax.conv_general_dilated``, but without `N` the batch dimension.
+        Default: "channel_last".
     
     :returns y: ``x`` with max pooling applied.
     """
     return pool(
         x,
-        -jax.numpy.inf,
+        -jnp.inf,
         lax.max,
         window_shape,
         strides,
         padding,
         input_dilation,
         window_dilation,
-        channel_last
+        data_format
     )
 
 def sum_pool(
-    x: jax.Array,
+    x: Array,
     window_shape: Union[int, Sequence[int]],
     strides: Union[int, Sequence[int]] = 1,
     padding: Union[str, int, Sequence[Union[int, Tuple[int, int]]]] = "VALID",
     input_dilation: Optional[Union[int, Sequence[int]]] = None,
     window_dilation: Optional[Union[int, Sequence[int]]] = None,
-    channel_last: bool=False
-) -> jax.Array:
+    data_format: str="channel_last"
+) -> Array:
     """Apply sum pooling over input features.
 
     :param x: Input features. Must have be unbatched thus having
@@ -194,8 +224,10 @@ def sum_pool(
         Default: None, no input dilation.
     :param window_dilation: See the ``window_dilation`` parameter of
         ``pooling``. Default: None, no window dilation.
-    :param channel_last: Whether features are channel-last or first. Default:
-        False, channel-first.
+    :param data_format: "channel_last", "channel_first", or a string
+        representing the kernel spec as described in
+        ``jax.lax.conv_general_dilated``, but without `N` the batch dimension.
+        Default: "channel_last".
     
     :returns y: ``x`` with sum pooling applied.
     """
@@ -208,18 +240,18 @@ def sum_pool(
         padding,
         input_dilation,
         window_dilation,
-        channel_last
+        data_format
     )
 
 def avg_pool(
-    x: jax.Array,
+    x: Array,
     window_shape: Union[int, Sequence[int]],
     strides: Union[int, Sequence[int]] = 1,
     padding: Union[str, int, Sequence[Union[int, Tuple[int, int]]]] = "VALID",
     input_dilation: Optional[Union[int, Sequence[int]]] = None,
     window_dilation: Optional[Union[int, Sequence[int]]] = None,
-    channel_last: bool=False
-) -> jax.Array:
+    data_format: str="channel_last"
+) -> Array:
     """Apply average pooling over input features.
 
     :param x: Input features. Must have be unbatched thus having
@@ -231,14 +263,15 @@ def avg_pool(
         Default: None, no input dilation.
     :param window_dilation: See the ``window_dilation`` parameter of
         ``pooling``. Default: None, no window dilation.
-    :param channel_last: Whether features are channel-last or first. Default:
-        False, channel-first.
- 
+    :param data_format: "channel_last", "channel_first", or a string
+        representing the kernel spec as described in
+        ``jax.lax.conv_general_dilated``, but without `N` the batch dimension.
+        Default: "channel_last".
+
     :returns y: ``x`` with average pooling applied.
     """
     n_spatial_dims = x.ndim - 1
     window_shape = _canon_int_sequence(window_shape, n_spatial_dims)
-
     activations = pool(
         x,
         0,
@@ -248,18 +281,16 @@ def avg_pool(
         padding,
         input_dilation,
         window_dilation,
-        channel_last
+        data_format
     )
-
     return lax.div(
         activations,
         lax.convert_element_type(prod(window_shape), activations.dtype)
     )
 
 def dot_product_attention_logits(
-    query: jax.Array,
-    key: jax.Array
-):
+    query: Array, key: Array
+) -> Array:
     """Compute scaled dot-product attention logits.
     
     :param query: Query array of shape
@@ -270,19 +301,14 @@ def dot_product_attention_logits(
     :returns: Attention logits of
         ``(num_heads, query_length, key_value_length)``.
     """
-    logits = lax.dot_general(
-        query, key,
-        (((2,), (2,)), ((1,), (1,)))
-    )
+    logits = lax.dot_general(query, key, (((2,), (2,)), ((1,), (1,))))
     return lax.div(
-        logits,
-        lax.convert_element_type(sqrt(query.shape[-1]), logits.dtype)
+        logits, lax.convert_element_type(sqrt(query.shape[2]), logits.dtype)
     )
 
 def apply_attention_weights(
-    value: jax.Array,
-    attention_weights: jax.Array
-):
+    value: Array, attention_weights: Array
+) -> Array:
     """Apply attention weights to values.
 
     :param value: Value array of shape
@@ -294,73 +320,37 @@ def apply_attention_weights(
         ``(query_length, num_heads, value_depth)``.
     """
     activations = lax.dot_general(
-        value, attention_weights,
-        (((0,), (2,)), ((1,), (0,)))
+        value, attention_weights, (((0,), (2,)), ((1,), (0,)))
     )
     # activations: (num_heads, depth, value_length)
     return lax.transpose(activations, (2, 0, 1))
 
-def layer_norm(x, epsilon=1e-05):
-    """Apply layer normalization.
+def z_norm(
+    x: Array,
+    axis: Union[str, int, Sequence[int]],
+    batch_axis_name: Union[Hashable, Tuple[Hashable]]=(),
+    epsilon: float=1e-05
+):
+    """Apply Z-score normalization.
 
-    :param x: Input features.
+    :param axis: "all", "channel_last", "channel_first", axis, or sequence of
+        axes to normalize input features along. "all" indicates normalization
+        along all axes (layer norm). "channel_last" and "channel_first" indicate
+        normalization along all but the channel axis, assumed to be the last or
+        first axis (instance norm).
     :param epsilon: Small number added to variance to avoid divisions by zero.
         Default: 1e-05.
-    
-    :returns: ``x`` with layer normalization applied.
+    :param batch_axis_name: Hashable or tuple of hashable representing
+        the batch axis name(s) to normalize along in addition to those in
+        ``axis``. Default: (), no normlization along any batch axis.
+
+    :returns: ``x`` with normalization applied.
     """
-    return _normalize(x, range(x.ndim), epsilon)
-
-def instance_norm(x, channel_last=False, epsilon=1e-05):
-    """Apply instance normalization.
-
-    :param x: Input features. Must be compatible with ``channel_last``.
-    :param channel_last: Whether features are channel-last or first. Default:
-        False, channel-first.
-    :param epsilon: Small number added to variance to avoid divisions by zero.
-        Default: 1e-05.
-    
-    :returns: ``x`` with instance normalization applied.
-    """
-    dims = range(x.ndim - 1) if channel_last else range(1, x.ndim)
-    return _normalize(
-        x,
-        dims,
-        epsilon
-    )
-
-def group_norm(x, num_groups, channel_last=False, epsilon=1e-05):
-    """Apply group normalization.
-
-    :param x: Input features. Must be compatible with ``channel_last``.
-    :param num_groups: Number of groups to split the channels into. Must divide
-        the number of channels in ``x``.
-    :param channel_last: Whether features are channel-last or first. Default:
-        False, channel-first.
-    :param epsilon: Small number added to variance to avoid divisions by zero.
-        Default: 1e-05.
-    
-    :returns: ``x`` with group normalization applied.
-    """
-    x_shape = x.shape
-    if channel_last:
-        num_channels = x_shape[-1]
-        x = lax.reshape(
-            x, (*x_shape[:-1], num_channels//num_groups, num_groups)
-        )
-        dims = range(x.ndim - 1)
-    else:
-        num_channels = x_shape[0]
-        x = lax.reshape(
-            x, (num_groups, num_channels//num_groups, *x_shape[1:])
-        )
-        dims = range(1, x.ndim)
-    
-    return lax.reshape(
-        _normalize(
-            x,
-            dims,
-            epsilon
-        ),
-        x_shape
-    )
+    if axis == "all":
+        axis = list(range(x.ndim))
+    elif axis == "channel_last":
+        axis = list(range(x.ndim - 1))
+    elif axis == "channel_first":
+        axis = list(range(1, x.ndim))
+    mean, variance = _compute_std_stats(x, axis, batch_axis_name)
+    return _standadize(x, axis, mean, variance, epsilon)

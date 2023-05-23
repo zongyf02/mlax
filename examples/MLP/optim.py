@@ -18,9 +18,9 @@ def sparse_categorical_crossentropy(predictions, targets):
 
     # Clip zeros to avoid NaNs
     predictions = lax.clamp(
-        lax.convert_element_type(1e-7, predictions.dtype),
+        lax.convert_element_type(1e-5, predictions.dtype),
         predictions,
-        lax.convert_element_type(1 - 1e-7, predictions.dtype),
+        lax.convert_element_type(1 - 1e-5, predictions.dtype),
     )
     per_example_loss = vmap(per_example_loss_fn)(predictions, targets)
     return per_example_loss.mean()
@@ -44,8 +44,8 @@ def sgd_init(weights):
 def sgd_step(
     gradients,
     optim_state,
-    lr = 0.01,
-    momentum = 0.0,
+    lr = 1e-2,
+    momentum = 0.9,
     nesterov = False
 ):
     """Find the gradients for a single optimization step.

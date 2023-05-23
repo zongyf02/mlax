@@ -10,7 +10,6 @@ Welcome to MLAX's documentation!
    nn
    faq
    apidocs/modules 
-   dev_notes
 
 
 Indices and tables

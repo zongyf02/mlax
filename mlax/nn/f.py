@@ -1,81 +1,89 @@
-import jax
+from jax import Array
+from typing import Any, Callable, Optional, Tuple, Union, Hashable
 from mlax import Module
-from typing import Callable, Optional, Any
+from mlax._utils import _needs_axis_name
 
 class F(Module):
     """Wrapper to create pure function layers."""
     def __init__(
         self,
-        train_fn: Callable[[jax.Array], jax.Array],
-        infer_fn: Optional[Callable[[jax.Array], jax.Array]] = None
+        train_fn: Union[Callable[[Any], Any], Callable[[Any], Any]],
+        infer_fn: Optional[Union[Callable[[Any], Any], Callable[[Any], Any]]]=None
     ):
         """Initialize a F layer.
 
-        :param train_fn: Pure function that takes in and returns a JAX array.
-            Called when ``inference_mode`` is False.
-        :param infer_fn: Optional pure function that takes in and returns a JAX
-            array. Called when ``inference_mode`` is True. If None, the
+        :param train_fn: Pure function that takes in a valid JAX type and
+            optionally a keyword argument `axis_name` and returns a valid JAX
+            type. Called when ``inference_mode`` is False.
+        :param infer_fn: Pure function that takes in a valid JAX type and
+            optionally a keyword argument `axis_name` and returns a valid JAX
+            type. Called when ``inference_mode`` is True. If None, the
             ``train_fn`` is called instead. Default: None.
         """
         super().__init__()
         self.train_fn = train_fn
         self.infer_fn = infer_fn
     
-    def __call__(self, x, rng=None, inference_mode=False):
-        """Apply an arbitrary pure functional transform.
+    def init(self, x: Any) -> None:
+        pass
 
-        :param x: Input features.
-        :param rng: PRNG key. Ignored. Default: None.
-        :param inference_mode: Whether in inference or training mode. Default:
-            False.
-        
-        :returns: ``x`` with the arbitrary transform applied.
-        :returns: F layer with updated state. Possibly the same object as
-            ``self``.
-        """
-        if inference_mode:
-            if self.infer_fn is None:
-                return self.train_fn(x), self
+    def apply(
+        self,
+        x: Any,
+        rng: None=None,
+        inference_mode: bool=False,
+        batch_axis_name: Union[Hashable, Tuple[Hashable]]=()
+    ) -> Tuple[Any, Any]:
+        if self.infer_fn is None or not inference_mode:
+            if _needs_axis_name(self.train_fn):
+                return self.train_fn(x, axis_name=batch_axis_name)
             else:
-                return self.infer_fn(x), self
+                return self.train_fn(x)
         else:
-            return self.train_fn(x), self
+            if _needs_axis_name(self.infer_fn):
+                return self.infer_fn(x, axis_name=batch_axis_name)
+            else:
+                return self.infer_fn(x)
 
 class FRng(Module):
     """Wrapper to create pure function layers that may require rng."""
     def __init__(
         self,
-        train_fn: Callable[[jax.Array, Any], jax.Array],
-        infer_fn: Optional[Callable[[jax.Array, Any], jax.Array]] = None
+        train_fn: Callable[[Any, Array], Any],
+        infer_fn: Optional[Callable[[Any, Array], Any]]=None
     ):
         """Initialize a FRng layer.
 
-        :param train_fn: Pure function that takes in a JAX array and a PRNGKey
-            and returns a JAX array. Called when ``inference_mode`` is False.
-        :param infer_fn: Optional pure function that takes in a JAX array and a
-            PRNGKey and and returns a JAX array. Called when ``inference_mode``
-            is True. If None, the ``train_fn`` is called instead. Default: None.
+        :param train_fn: Pure function that takes in a valid JAX type, a PRNG
+            key, and optionally a keyword argument `axis_name` and returns a
+            valid JAX type. Called when ``inference_mode`` is False.
+        :param infer_fn: Pure function that takes in a valid JAX type, a PRNG
+            key, and optionally a keyword argument `axis_name` and returns a
+            valid JAX type. Called when ``inference_mode`` is True. If None, the
+            ``train_fn`` is called instead. Default: None.
         """
         super().__init__()
         self.train_fn = train_fn
         self.infer_fn = infer_fn
     
-    def __call__(self, x, rng, inference_mode=False):
-        """Apply an arbitrary pure functional transform.
+    def init(self, x: Any) -> None:
+        pass
 
-        :param x: Input features.
-        :param rng: PRNG key.
-        :param inference_mode: Whether in inference or training mode. Default:
-            False.
-        
-        :returns: ``x`` with the arbitrary transform applied.
-        :returns: F layer with updated state. Possibly the same object as
-            ``self``.
-        """
-        if inference_mode:
-            if self.infer_fn is None:
-                return self.train_fn(x, rng), self
+    def apply(
+        self,
+        x: Any,
+        rng: Array,
+        inference_mode: bool=False,
+        batch_axis_name: Union[Hashable, Tuple[Hashable]]=()
+    ) -> Tuple[Any, Any]:
+        """Apply an arbitrary pure functional transform."""
+        if self.infer_fn is None or not inference_mode:
+            if _needs_axis_name(self.train_fn):
+                return self.train_fn(x, rng, axis_name=batch_axis_name)
             else:
-                return self.infer_fn(x, rng), self
+                return self.train_fn(x, rng)
         else:
-            return self.train_fn(x, rng), self
+            if _needs_axis_name(self.infer_fn):
+                return self.infer_fn(x, rng, axis_name=batch_axis_name)
+            else:
+                return self.infer_fn(x, rng)

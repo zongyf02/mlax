@@ -1,38 +1,37 @@
 import jax
 from jax import (
     numpy as jnp,
-    tree_util as jtu,
     random,
-    nn,
-    lax
+    nn
 )
-from mlax import (
-    fwd,
-    is_trainable
-)
-from mlax.nn import Series, SeriesRng, Linear, Bias, F, FRng
 import pytest
+from mlax.nn import Series, SeriesRng, Linear, Bias, F, FRng
+from mlax._test_utils import (
+    layer_test_results,
+    assert_equal_array,
+    assert_equal_pytree
+)
 
 @pytest.mark.parametrize(
-    "layers,input,expected_train_output,expected_infer_output",
+    "layers,x,expected_train_output,expected_infer_output",
     [
         (
-            [
+            (
                 Linear(
                     random.PRNGKey(0),
                     out_features=3,
                     kernel_initializer=nn.initializers.ones
                 ),
                 Bias(
-                    random.PRNGKey(0),
-                    in_features=-1, 
+                    random.PRNGKey(1),
+                    in_features=-1,
                     bias_initializer=nn.initializers.ones
                 ),
                 F(
                     train_fn=lambda x: x,
                     infer_fn=lambda x: 2 * x
                 )
-            ],
+            ),
             jnp.ones((2, 4), jnp.bfloat16),
             jnp.full((2, 3), 5, jnp.bfloat16),
             jnp.full((2, 3), 10, jnp.bfloat16),
@@ -40,48 +39,24 @@ import pytest
     ]
 )
 def test_series(
-    layers,
-    input,
-    expected_train_output,
-    expected_infer_output,
+    layers, x, expected_train_output, expected_infer_output
 ):
-    model = Series(
-        layers
+    model, (t_acts, new_t_model), (i_acts, new_i_model) = layer_test_results(
+        Series, {"layers": layers}, x
     )
+    assert model.layers.trainable is None
+    assert isinstance(model.layers.data, list)
 
-    fwd_jit = jax.jit(
-        jax.vmap(
-            fwd,
-            in_axes = (None, None, 0, None, None),
-            out_axes = (0, None)
-        ),
-        static_argnames="inference_mode"
-    )
+    assert_equal_array(t_acts, expected_train_output)
+    assert new_t_model.layers.trainable is None
+    assert isinstance(new_t_model.layers.data, list)
 
-    activations, model = fwd_jit(
-        *model.partition(),
-        input,
-        None, # rng
-        False # inference_mode
-    )
-    assert lax.eq(
-        activations,
-        expected_train_output
-    ).all()
-    
-    activations, model = fwd_jit(
-        *model.partition(),
-        input,
-        None, # rng
-        True # inference_mode
-    )
-    assert lax.eq(
-        activations,
-        expected_infer_output
-    ).all()
+    assert_equal_array(i_acts, expected_infer_output)
+    assert new_i_model.layers.trainable is None
+    assert isinstance(new_i_model.layers.data, list)
 
 @pytest.mark.parametrize(
-    "layers,input,rng,expected_train_output,expected_infer_output",
+    "layers,x,rng,expected_train_output,expected_infer_output",
     [
         (
             iter([
@@ -91,8 +66,8 @@ def test_series(
                     kernel_initializer=nn.initializers.ones
                 ),
                 Bias(
-                    random.PRNGKey(0),
-                    in_features=-1, 
+                    random.PRNGKey(1),
+                    in_features=-1,
                     bias_initializer=nn.initializers.ones
                 ),
                 FRng(
@@ -101,64 +76,25 @@ def test_series(
                 )
             ]),
             jnp.ones((2, 4), jnp.bfloat16),
-            random.PRNGKey(1),
-            (
-                jnp.full((2, 3), 5, jnp.bfloat16),
-                jnp.stack([random.PRNGKey(1), random.PRNGKey(1)])
-            ),
-            (
-                jnp.full((2, 3), 10, jnp.bfloat16),
-                jnp.stack([random.PRNGKey(1), random.PRNGKey(1)])
-            )
+            random.PRNGKey(7),
+            (jnp.full((2, 3), 5, jnp.bfloat16), random.PRNGKey(7)),
+            (jnp.full((2, 3), 10, jnp.bfloat16), random.PRNGKey(7))
         ),
     ]
 )
 def test_series_rng(
-    layers,
-    input,
-    rng,
-    expected_train_output,
-    expected_infer_output,
+    layers, x, rng, expected_train_output, expected_infer_output
 ):
-    model = SeriesRng(
-        layers
+    model, (t_acts, new_t_model), (i_acts, new_i_model) = layer_test_results(
+        SeriesRng, {"layers": layers}, x, rng=rng, y_vmap_axis=(0, None)
     )
+    assert model.layers.trainable is None
+    assert isinstance(model.layers.data, list)
 
-    fwd_jit = jax.jit(
-        jax.vmap(
-            fwd,
-            in_axes = (None, None, 0, None, None),
-            out_axes = (0, None)
-        ),
-        static_argnames="inference_mode"
-    )
+    assert_equal_pytree(t_acts, expected_train_output)
+    assert new_t_model.layers.trainable is None
+    assert isinstance(new_t_model.layers.data, list)
 
-    activations, model = fwd_jit(
-        *model.partition(),
-        input,
-        rng, # rng
-        False # inference_mode
-    )
-    assert jtu.tree_reduce(
-        lambda acc, x: acc and x,
-        jtu.tree_map(
-            lambda a, b: lax.eq(a, b).all(),
-            activations,
-            expected_train_output
-        )
-    )
-
-    activations, model = fwd_jit(
-        *model.partition(),
-        input,
-        rng, # rng
-        True # inference_mode
-    )
-    assert jtu.tree_reduce(
-        lambda acc, x: acc and x,
-        jtu.tree_map(
-            lambda a, b: lax.eq(a, b).all(),
-            activations,
-            expected_infer_output
-        )
-    )
+    assert_equal_pytree(i_acts, expected_infer_output)
+    assert new_i_model.layers.trainable is None
+    assert isinstance(new_i_model.layers.data, list)

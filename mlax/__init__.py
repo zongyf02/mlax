@@ -1,10 +1,7 @@
 from mlax.module import (
     Parameter,
-    Module,
-    ModuleSeq,
-    fwd,
-    is_mlax_module,
-    is_parameter,
-    is_trainable,
-    is_non_trainable
+    is_trainable_param,
+    is_non_trainable_param,
+    is_leaf_param,
+    Module
 )

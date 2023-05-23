@@ -1,16 +1,11 @@
-import jax
 from jax import (
     numpy as jnp,
     random,
-    nn,
-    lax
+    nn
 )
-from mlax import (
-    fwd,
-    is_trainable
-)
-from mlax.nn import Embed
 import pytest
+from mlax.nn import Embed
+from mlax._test_utils import layer_test_results, assert_equal_array
 
 def range_initializer(key, shape, dtype):
     assert len(shape) == 2
@@ -18,7 +13,7 @@ def range_initializer(key, shape, dtype):
     return jnp.expand_dims(jnp.arange(shape[0], dtype=dtype), axis=1)
 
 @pytest.mark.parametrize(
-    "config,expected_embed_weight,input,expected_output",
+    "config,x,expected_embed_kernel,expected_output",
     [
         (
             {
@@ -28,8 +23,8 @@ def range_initializer(key, shape, dtype):
                 "embed_initializer": nn.initializers.ones,
                 "dtype": jnp.float32
             },
-            jnp.ones((10, 8), dtype=jnp.float32),
             jnp.arange(11),
+            jnp.ones((10, 8), dtype=jnp.float32),
             jnp.concatenate(
                 [
                     jnp.ones((10, 8), jnp.float32),
@@ -43,14 +38,14 @@ def range_initializer(key, shape, dtype):
                 "vocab_size": 8,
                 "embed_dim": 12,
                 "embed_initializer": nn.initializers.zeros,
-                "dtype": jnp.int8
+                "dtype": jnp.int16
             },
-            jnp.zeros((8, 12), jnp.int8),
             jnp.arange(9, dtype=jnp.int8),
+            jnp.zeros((8, 12), jnp.int16),
             jnp.concatenate(
                 [
-                    jnp.zeros((8, 12), jnp.int8),
-                    jnp.full((1, 12), -jnp.inf, jnp.int8)
+                    jnp.zeros((8, 12), jnp.int16),
+                    jnp.full((1, 12), -jnp.inf, jnp.int16)
                 ]
             )
         ),
@@ -62,56 +57,26 @@ def range_initializer(key, shape, dtype):
                 "embed_initializer": range_initializer,
                 "dtype": jnp.float16
             },
-            range_initializer(random.PRNGKey(2), (16, 1), jnp.float16),
-            jnp.arange(17, dtype=jnp.int16),
+            jnp.arange(18, dtype=jnp.int16),
+            jnp.expand_dims(jnp.arange(16, dtype=jnp.float16), axis=1),
             jnp.expand_dims(
-                jnp.concatenate(
-                    [
-                        jnp.arange(16, dtype=jnp.float16),
-                        jnp.full(1, jnp.nan, jnp.float16)
-                    ]
-                ),
+                jnp.concatenate([
+                    jnp.arange(16, dtype=jnp.float16),
+                    jnp.full(2, jnp.nan, jnp.float16)
+                ]),
                 axis=1
             )
         )
     ]
 )
-def test_embed(
-    config,
-    expected_embed_weight,
-    input,
-    expected_output
-):
-    embed = Embed(
-        **config
+def test_embed(config, x, expected_embed_kernel, expected_output):
+    layer, (t_acts, new_t_layer), (i_acts, new_i_layer) = layer_test_results(
+        Embed, config, x
     )
-    assert lax.eq(
-        embed.embed_weight.data,
-        expected_embed_weight
-    ).all()
+    assert_equal_array(layer.embed_kernel.data, expected_embed_kernel)
 
-    fwd_jit = jax.jit(
-        jax.vmap(
-            fwd,
-            in_axes = (None, None, 0, None, None),
-            out_axes = (0, None)
-        ),
-        static_argnames="inference_mode"
-    )
+    assert_equal_array(t_acts, expected_output)
+    assert_equal_array(new_t_layer.embed_kernel.data, expected_embed_kernel)
 
-    activations, embed = fwd_jit(
-        *embed.partition(),
-        input,
-        None, # rng
-        False # inference_mode
-    )
-    assert jnp.logical_or(
-        jnp.logical_and(
-            jnp.isnan(activations),
-            jnp.isnan(expected_output)
-        ), # NaN are not equal to NaN
-        lax.eq(
-            activations,
-            expected_output
-        )
-    ).all()
+    assert_equal_array(i_acts, expected_output)
+    assert_equal_array(new_i_layer.embed_kernel.data, expected_embed_kernel)
