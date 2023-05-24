@@ -5,7 +5,7 @@ with open("README.md", "r") as file:
 
 setup(
     name="mlax_nn",
-    version="0.2.2",
+    version="0.2.3",
     description="A pure functional machine learning library build on top of Google JAX.",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -24,12 +24,12 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules"
     ],
     install_requires = [
-        "jax>=0.4.1",
-        "jaxlib>=0.4.1"
+        "jax>=0.4.8",
+        "jaxlib>=0.4.7"
     ],
     extras_require = {
         "dev" : [
-            "pytest==7.2"
+            "pytest==7.3.1"
         ],
     },
     url="https://github.com/zongyf02/mlax",

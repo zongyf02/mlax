@@ -1,36 +1,35 @@
-from mlax import Parameter, Module
 from jax import (
+    Array,
     numpy as jnp,
     nn,
-    lax
+    lax,
+    dtypes
 )
 from functools import reduce
-from typing import Tuple, Any, Sequence, Union, Optional
+from typing import Tuple, Sequence, Union, Optional, Hashable, Any
+from mlax import Parameter, Module
 from mlax._utils import (
     _canon_int_sequence,
     _canon_opt_int_sequence,
     _canon_padding,
-    _canon_dtype,
     _canon_opt_dtype,
     _canon_precision_pair
 )
-
 
 class Conv(Module):
     """Convolution transformation layer."""
     def __init__(
         self,
-        rng: Any,
-        n_spatial_dims: int,
+        rng: Array,
         out_channels: int,
         filter_shape: Union[int, Sequence[int]],
         strides: Union[int, Sequence[int]] = 1,
-        padding: Union[str, int, Sequence[Union[int, Tuple[int, int]]]] = "VALID",
-        input_dilation: Optional[Union[int, Sequence[int]]] = None,
-        filter_dilation: Optional[Union[int, Sequence[int]]] = None,
-        feature_group_count: int = 1,
-        batch_group_count: int = 1,
-        channel_last: bool=False,
+        padding: Union[str, int, Sequence[Union[int, Tuple[int, int]]]]="VALID",
+        input_dilation: Optional[Union[int, Sequence[int]]]=None,
+        filter_dilation: Optional[Union[int, Sequence[int]]]=None,
+        feature_group_count: int=1,
+        batch_group_count: int=1,
+        data_format: Union[str, Tuple[str, str, str]]="channel_last",
         precision=None,
         accum_dtype=None,
         kernel_initializer=nn.initializers.glorot_uniform(),
@@ -38,8 +37,7 @@ class Conv(Module):
     ):
         """Initialize a Conv layer.
 
-        :param rng: PRNG key for weight initialization.
-        :param n_spatial_dims: Number of input spatial dimensions.
+        :param rng: PRNG key.
         :param out_channels: Number of desired output channels.
         :param filter_shape: An integer or a sequence of ``n_spatial_dims``
             integers, specifying the shape of the filters. A single integer
@@ -69,8 +67,9 @@ class Conv(Module):
             seperable convolutions. Default: 1.
         :param batch_group_count: See the ``batch_group_count`` parameter of
             `jax.lax.conv_general_dilated`_. Default: 1.
-        :param channel_last: Whether features are channel-last or first. Default:
-            False, channel-first.
+        :param data_format: "channel_last", "channel_first", or a 3-tuple of
+            strings as described in ``jax.lax.conv_general_dilated`` but without
+            the batch axis "N".
         :param precision: See the ``precision`` parameter of
             `jax.lax.conv_general_dilated`_. Default: None.
         :param accum_dtype: See the ``preferred_element_type`` parameter of
@@ -78,123 +77,128 @@ class Conv(Module):
         :param kernel_initializer: Initializer for kernel of format "N..IO" as
             defined by ``jax.nn.initalizers <https://jax.readthedocs.io/en/latest/jax.nn.initializers.html>``.
             Default:: glorot uniform.
-        :param dtype: Type of initialized kernel weight. Default: None.
-            ``kernel_initializer``'s default.
+        :param dtype: Type of initialized parameters. Default: float32.
         """
         super().__init__()
-        self.initialized = False
 
-        self._rng =  Parameter(trainable=False, data=rng)
-        self._n_spatial_dims = n_spatial_dims
-        self._out_channels = out_channels
-        self._filter_shape = _canon_int_sequence(
-            filter_shape, self._n_spatial_dims
+        self.rng = rng
+        self.out_channels = int(out_channels)
+        self.filter_shape = _canon_int_sequence(filter_shape)
+        self.strides = _canon_int_sequence(strides)
+        self.padding = _canon_padding(padding)
+        self.input_dilation = _canon_opt_int_sequence(input_dilation)
+        self.filter_dilation = _canon_opt_int_sequence(filter_dilation)
+        self.feature_group_count = int(feature_group_count)
+        self.batch_group_count = int(batch_group_count)
+        self.data_format = (
+            str(data_format) if isinstance(data_format, str)
+            else tuple(str(s) for s in data_format[:3])
         )
-        self._kernel_initializer = kernel_initializer
-        self._dtype = _canon_dtype(dtype)
-
-        self.kernel_weight = Parameter(trainable=True)
-        self.strides = _canon_int_sequence(strides, self._n_spatial_dims)
-        self.padding = _canon_padding(padding, self._n_spatial_dims)
-        self.input_dilation = _canon_opt_int_sequence(
-            input_dilation, self._n_spatial_dims
-        )
-        self.filter_dilation = _canon_opt_int_sequence(
-            filter_dilation, self._n_spatial_dims
-        )
-        self.feature_group_count = feature_group_count
-        self.batch_group_count = batch_group_count
-        self.channel_last = channel_last
         self.precision = _canon_precision_pair(precision)
         self.accum_dtype = _canon_opt_dtype(accum_dtype)
+        self.kernel_initializer = kernel_initializer
+        self.dtype = dtypes.canonicalize_dtype(dtype)
 
-        chars = reduce(
-            lambda a, b: a + chr(97 + b),
-            range(self._n_spatial_dims),
-            ""
-        ) # ab...
-        if self.channel_last:
-            io_spec = "N" + chars + "C" # Nab...C
-            kernel_spec = "O" + chars + "I" # Oab...I
+        self.conv_kernel = Parameter(trainable=True)
+        self.dimension_numbers = None
+
+    def init(self, x: Array) -> None:
+        n_spatial_dims = x.ndim - 1
+        filter_shape = _canon_int_sequence(self.filter_shape, n_spatial_dims)
+        if isinstance(self.data_format, tuple):
+            i_spec, kernel_spec, o_spec = self.data_format
+            dims_map = {}
+            dim = 0
+            for c in i_spec:
+                if c == "C":
+                    channel_dim = dim
+                else:
+                    dims_map[c] = dim
+                    dim += 1
+
+            self.conv_kernel.data = self.kernel_initializer(
+                self.rng,
+                [*filter_shape, x.shape[channel_dim], self.out_channels],
+                self.dtype
+            )
+            self.conv_kernel.data = lax.transpose(
+                self.conv_kernel.data,
+                [
+                    n_spatial_dims + 1 if c == "O" else
+                    n_spatial_dims if c == "I" else
+                    dims_map[c] for c in self.data_format[1]
+                ]
+            )
         else:
-            io_spec = "NC" + chars # NCab...
-            kernel_spec = "OI" + chars # OIab...
-        dummy_shape = [None] * (self._n_spatial_dims + 2)
+            chars = reduce(
+                lambda a, b: a + chr(97 + b),
+                range(n_spatial_dims),
+                ""
+            ) # ab...
+
+            if self.data_format == "channel_last":
+                self.conv_kernel.data = self.kernel_initializer(
+                    self.rng,
+                    [*filter_shape, x.shape[-1], self.out_channels],
+                    self.dtype
+                )
+                self.conv_kernel.data = lax.transpose(
+                    self.conv_kernel.data,
+                    [
+                        n_spatial_dims + 1,
+                        *range(n_spatial_dims),
+                        n_spatial_dims
+                    ]
+                )
+                i_spec = chars + "C" # ab...C
+                kernel_spec = "O" + chars + "I" # Oab...I
+                o_spec = i_spec
+            elif self.data_format == "channel_first":
+                self.conv_kernel.data = self.kernel_initializer(
+                    self.rng,
+                    [*filter_shape, x.shape[0], self.out_channels],
+                    self.dtype
+                )
+                self.conv_kernel.data = lax.transpose(
+                    self.conv_kernel.data,
+                    [
+                        n_spatial_dims + 1,
+                        n_spatial_dims,
+                        *range(n_spatial_dims)
+                    ]
+                )
+                i_spec = "C" + chars # Cab...
+                kernel_spec = "OI" + chars # OIab...
+                o_spec = i_spec
+
+        i_spec = "N" + i_spec
+        o_spec = "N" + o_spec
         self.dimension_numbers = lax.conv_dimension_numbers(
-            dummy_shape, dummy_shape,
-            (io_spec, kernel_spec, io_spec)
+            lax.broadcast(x, (1,)).shape, self.conv_kernel.data.shape,
+            (i_spec, kernel_spec, o_spec)
         )
-        
-    def _build(self, x):
-        """Initialize an uninitialized conv layer."""
-        if self.channel_last:
-            kernel_weight = self._kernel_initializer(
-                self._rng.data,
-                (*self._filter_shape, x.shape[-1], self._out_channels),
-                self._dtype
-            )
-            self.kernel_weight.data = lax.transpose(
-                kernel_weight,
-                (
-                    self._n_spatial_dims + 1,
-                    *range(self._n_spatial_dims),
-                    self._n_spatial_dims
-                )
-            )
-        else:
-            kernel_weight = self._kernel_initializer(
-                self._rng.data,
-                (*self._filter_shape, x.shape[0], self._out_channels),
-                self._dtype
-            )
-            self.kernel_weight.data = lax.transpose(
-                kernel_weight,
-                (
-                    self._n_spatial_dims + 1,
-                    self._n_spatial_dims,
-                    *range(self._n_spatial_dims)
-                )
-            )
 
-        del self._rng
-        del self._n_spatial_dims
-        del self._out_channels
-        del self._filter_shape
-        del self._kernel_initializer
-        del self._dtype
-
-        self.initialized = True
-
-    
-    def __call__(self, x, rng=None, inference_mode=False):
-        """Apply convolutions on input features.
-
-        :param x: Input features. Must be unbatched thus having
-            ``n_spatial_dims + 1`` dimensions and be compatible with
-            ``channel_last``.
-        :param rng: PRNG key. Ignored. Default: None.
-        :param inference_mode: Whether in inference or training mode. Ignored.
-            Default: False.
-        
-        :returns: Convolution on ``x``.
-        :returns: Conv layer with updated state. Possibly the same object as
-            ``self``.
-        """
-        if not self.initialized:
-            self._build(x)
-
+    def apply(
+        self,
+        x: Array,
+        rng: None=None,
+        inference_mode: bool=False,
+        batch_axis_name: Union[Hashable, Tuple[Hashable]]=()
+    ) -> Tuple[Array, Any]:
+        """Apply convolutions on input features."""
+        n_spatial_dims = x.ndim - 1
         x = lax.broadcast(x, (1,))
         x = lax.conv_general_dilated(
             x,
-            lax.convert_element_type(self.kernel_weight.data, x.dtype),
-            self.strides,
-            self.padding,
-            self.input_dilation,
-            self.filter_dilation,
+            lax.convert_element_type(self.conv_kernel.data, x.dtype),
+            _canon_int_sequence(self.strides, n_spatial_dims),
+            _canon_padding(self.padding, n_spatial_dims),
+            _canon_opt_int_sequence(self.input_dilation, n_spatial_dims),
+            _canon_opt_int_sequence(self.filter_dilation, n_spatial_dims),
             self.dimension_numbers,
             self.feature_group_count,
             self.batch_group_count,
             self.precision,
             self.accum_dtype
         )
-        return lax.squeeze(x, (0,)), self
+        return lax.squeeze(x, (0,))

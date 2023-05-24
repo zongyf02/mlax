@@ -1,10 +1,11 @@
-from mlax.nn.functional import dropout
 import jax.numpy as jnp
 from jax import (
     lax,
     random
 )
 import pytest
+from mlax.nn.functional import dropout
+from mlax._test_utils import assert_equal_array
 
 @pytest.mark.parametrize(
     "input,params,expected_output",
@@ -13,7 +14,17 @@ import pytest
             random.normal(random.PRNGKey(0), (2, 4, 3), jnp.float16),
             {
                 "rng": random.PRNGKey(1),
-                "rate": 0.0
+                "rate": 0.0,
+                "axis": (0, 1, 2)
+            },
+            random.normal(random.PRNGKey(0), (2, 4, 3), jnp.float16)
+        ),
+        (
+            random.normal(random.PRNGKey(0), (2, 4, 3), jnp.float16),
+            {
+                "rng": random.PRNGKey(1),
+                "rate": 0.0,
+                "axis": 0
             },
             random.normal(random.PRNGKey(0), (2, 4, 3), jnp.float16)
         )
@@ -21,7 +32,4 @@ import pytest
 )
 def test_dropout(input, params, expected_output):
     activations = dropout(input, **params)
-    assert lax.eq(
-        activations,
-        expected_output
-    ).all()
+    assert_equal_array(activations, expected_output)

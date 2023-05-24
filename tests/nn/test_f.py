@@ -1,18 +1,18 @@
-import jax
 from jax import (
     numpy as jnp,
     random,
     lax
 )
-from mlax import (
-    fwd,
-    is_trainable
-)
-from mlax.nn import F, FRng
 import pytest
+from mlax.nn import F, FRng
+from mlax._test_utils import (
+    layer_test_results,
+    assert_equal_array,
+    assert_equal_pytree
+)
 
 @pytest.mark.parametrize(
-    "config,input,expected_train_output,expected_infer_output",
+    "config,x,expected_train_output,expected_infer_output",
     [
         (
             {
@@ -27,55 +27,30 @@ import pytest
             {
                 "train_fn": lambda x: x
             },
-            jnp.ones((2, 4, 4, 3), jnp.bfloat16),
-            jnp.ones((2, 4, 4, 3), jnp.bfloat16),
-            jnp.ones((2, 4, 4, 3), jnp.bfloat16)
+            jnp.ones((2, 4, 4, 3), jnp.float16),
+            jnp.ones((2, 4, 4, 3), jnp.float16),
+            jnp.ones((2, 4, 4, 3), jnp.float16)
+        ),
+        (
+            {
+                "train_fn": lax.psum,
+                "infer_fn": lax.pmax
+            },
+            jnp.ones((2, 4), jnp.float32),
+            jnp.full((2, 4), 2, jnp.float32),
+            jnp.ones((2, 4), jnp.float32)
         ),
     ]
 )
-def test_f(
-    config,
-    input,
-    expected_train_output,
-    expected_infer_output
-):
-    f = F(
-        **config
+def test_f(config, x, expected_train_output, expected_infer_output):
+    _, (t_acts, _), (i_acts, _) = layer_test_results(
+        F, config, x
     )
-
-    fwd_jit = jax.jit(
-        jax.vmap(
-            fwd,
-            in_axes = (None, None, 0, None, None),
-            out_axes = (0, None)
-        ),
-        static_argnames="inference_mode"
-    )
-
-    activations, f = fwd_jit(
-        *f.partition(),
-        input,
-        None, # rng
-        False # inference_mode
-    )
-    assert lax.eq(
-        activations,
-        expected_train_output
-    ).all()
-
-    activations, f = fwd_jit(
-        *f.partition(),
-        input,
-        None, # rng
-        True # inference_mode
-    )
-    assert lax.eq(
-        activations,
-        expected_infer_output
-    ).all()
+    assert_equal_array(t_acts, expected_train_output)
+    assert_equal_array(i_acts, expected_infer_output)
 
 @pytest.mark.parametrize(
-    "config,input,rng,expected_train_output,expected_infer_output",
+    "config,x,rng,expected_train_output,expected_infer_output",
     [
         (
             {
@@ -83,68 +58,34 @@ def test_f(
                 "infer_fn": lambda x, rng: (2 * x, rng)
             },
             jnp.ones((2, 4, 4, 3), jnp.bfloat16),
-            random.PRNGKey(1),
-            jnp.ones((2, 4, 4, 3), jnp.bfloat16),
-            jnp.full((2, 4, 4, 3), 2, jnp.bfloat16)
+            random.PRNGKey(0),
+            (jnp.ones((2, 4, 4, 3), jnp.bfloat16), random.PRNGKey(0)),
+            (jnp.full((2, 4, 4, 3), 2, jnp.bfloat16), random.PRNGKey(0))
         ),
         (
             {
                 "train_fn": lambda x, rng: (x, rng)
             },
-            jnp.ones((2, 4, 4, 3), jnp.bfloat16),
+            jnp.ones((2, 4, 4, 3), jnp.float16),
+            random.PRNGKey(1),
+            (jnp.ones((2, 4, 4, 3), jnp.float16), random.PRNGKey(1)),
+            (jnp.ones((2, 4, 4, 3), jnp.float16), random.PRNGKey(1))
+        ),
+        (
+            {
+                "train_fn": lambda x, rng, axis_name: (lax.psum(x, axis_name), rng),
+                "infer_fn": lambda x, rng, axis_name: (lax.pmax(x, axis_name), rng)
+            },
+            jnp.ones((2, 4), jnp.float32),
             random.PRNGKey(2),
-            jnp.ones((2, 4, 4, 3), jnp.bfloat16),
-            jnp.ones((2, 4, 4, 3), jnp.bfloat16)
+            (jnp.full((2, 4), 2, jnp.float32), random.PRNGKey(2)),
+            (jnp.ones((2, 4), jnp.float32), random.PRNGKey(2))
         ),
     ]
 )
-def test_f_rng(
-    config,
-    input,
-    rng,
-    expected_train_output,
-    expected_infer_output
-):
-    f_rng = FRng(
-        **config
+def test_f_rng(config, x, rng, expected_train_output, expected_infer_output):
+    _, (t_acts, _), (i_acts, _) = layer_test_results(
+        FRng, config, x, rng=rng, y_vmap_axis=(0, None)
     )
-
-    fwd_jit = jax.jit(
-        jax.vmap(
-            fwd,
-            in_axes = (None, None, 0, None, None),
-            out_axes = (0, None)
-        ),
-        static_argnames="inference_mode"
-    )
-
-    activations, f_rng = fwd_jit(
-        *f_rng.partition(),
-        input,
-        rng,
-        False # inference_mode
-    )
-    assert lax.eq(
-        activations[0],
-        expected_train_output
-    ).all()
-    assert lax.eq(
-        activations[1],
-        jnp.stack([rng, rng])
-    ).all()
-    
-
-    activations, f_rng = fwd_jit(
-        *f_rng.partition(),
-        input,
-        rng,
-        True # inference_mode
-    )
-    assert lax.eq(
-        activations[0],
-        expected_infer_output
-    ).all()
-    assert lax.eq(
-        activations[1],
-        jnp.stack([rng, rng])
-    ).all()
+    assert_equal_pytree(t_acts, expected_train_output)
+    assert_equal_pytree(i_acts, expected_infer_output)

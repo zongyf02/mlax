@@ -1,215 +1,246 @@
-import jax
 from jax import (
-    tree_util as jtu
+    Array,
+    tree_util as jtu,
+    random
 )
-from typing import Any, Union, Hashable, Callable, Iterable
 from abc import ABCMeta
-from collections.abc import MutableSequence
+from typing import Any, Optional, Tuple, Union, Hashable
 
 @jtu.register_pytree_node_class
 class Parameter:
-    """PyTree wrapper around a valid JAX object with metadata."""
+    """PyTree wrapper around a valid JAX object and metadata."""
 
-    def __init__(self, trainable: bool, data: Any = None, name: Hashable = None) -> None:
+    def __init__(self, trainable: Optional[bool], data: Any=None):
         """Initialize parameter.
-        
+
         :param trainable: Whether the parameter is trainable or non-trainable.
+            If None, indicates that the data field contains nested parameters.
         :param data: The content of parameter. Must be a valid JAX type or a
-            PyTree of valid JAX types, but cannot contain submodules.
+            PyTree of valid JAX types.
             Default: None.
-        :param name: Additional metadata, must be hashable. Default: None.
         """
         super().__init__()
         self.trainable = trainable
         self.data = data
-        self.name = name
 
     def tree_flatten(self):
         """Flatten into a valid JAX object and auxiliary metadata."""
-        return (self.data,), (self.trainable, self.name)
+        meta_names = []
+        meta_values = []
+        for name, value in vars(self).items():
+            if name != "data" and name != "trainable":
+                meta_names.append(name)
+                meta_values.append(value)
+
+        return (self.data,), (
+            self.trainable, tuple(meta_names), tuple(meta_values)
+        )
 
     @classmethod
     def tree_unflatten(cls, aux, children):
         """Unflatten a valid JAX object and auxiliary metadata."""
-        trainable, name = aux
-        return cls(trainable, *children, name)
+        trainable, meta_names, meta_values = aux
+        self = cls(trainable, *children)
+        for name, value in zip(meta_names, meta_values):
+            object.__setattr__(self, name, value)
+        return self
 
     def __repr__(self) -> str:
-        return f"Parameter(trainable={self.trainable}, data={self.data}, name={self.name})"
+        return f"Parameter(trainable={self.trainable}, data={self.data})"
 
-def is_parameter(p) -> bool:
-    """Whether ``p`` is a Parameter."""
-    return isinstance(p, Parameter)
+def is_trainable_param(p):
+    """Whether ``p`` is a parameter whose ``trainable is True``."""
+    return isinstance(p, Parameter) and p.trainable is True
 
-def is_trainable(p) -> bool:
-    """Whether ``p`` is trainable."""
-    return p.trainable
+def is_non_trainable_param(p):
+    """Whether ``p`` is a parameter whose ``trainable is False``."""
+    return isinstance(p, Parameter) and p.trainable is False
 
-def is_non_trainable(p) -> bool:
-    """Whether ``p`` is non_trainable."""
-    return p.non_trainable
+def is_leaf_param(p):
+    """Whether ``p`` is a parameter whose ``trainable is not None``."""
+    return isinstance(p, Parameter) and p.trainable is not None
 
 class _ModuleMeta(ABCMeta):
     """Registers all modules as a PyTree"""
-    def __new__(mcs, name, bases, attrs):
-        cls = super().__new__(mcs, name, bases, attrs)
-        jtu.register_pytree_node_class(cls)
+    def __new__(mcs, name, bases, namespace, **kwargs):
+        cls = super().__new__(mcs, name, bases, namespace, **kwargs)
+        jtu.register_pytree_with_keys_class(cls)
         return cls
 
 class Module(metaclass=_ModuleMeta):
-    """MLAX layer base class. PyTree of parameters with hyperparameters as
-    auxiliary data.
+    """MLAX layer base class. PyTree of `mlax.Parameters`.
     """
 
-    def __init__(self)  -> None:
-        """Initialize module."""
-        super().__init__()
+    def __init__(self) -> None:
+        """Initialize module hyperparameters."""
+        self.initialized = False
 
-    def tree_flatten(self):
+    def tree_flatten_with_keys(self):
         """Flatten into parameters and auxiliary hyperparameters."""
         param_names = []
         param_values = []
         hyperparam_names = []
         hyperparam_values = []
         for name, value in vars(self).items():
-            if is_parameter(value) or is_mlax_module(value):
-                param_names.append(name)
-                param_values.append(value)
-            else:
-                hyperparam_names.append(name)
-                hyperparam_values.append(value)
+            if name != "initialized":
+                if isinstance(value, (Parameter, Module)):
+                    param_names.append(name)
+                    param_values.append((name, value))
+                else:
+                    hyperparam_names.append(name)
+                    hyperparam_values.append(value)
         return param_values, (
-            param_names,
-            hyperparam_names,
-            hyperparam_values
+            param_names, hyperparam_names, hyperparam_values, self.initialized
         )
 
     @classmethod
     def tree_unflatten(cls, aux, param_values):
         """Unflatten parameters and auxiliary hyperparameters."""
-        param_names, hyperparam_names, hyperparam_values = aux
+        param_names, hyperparam_names, hyperparam_values, initialized = aux
         self = cls.__new__(cls)
         for name, value in zip(param_names, param_values):
             object.__setattr__(self, name, value)
         for name, value in zip(hyperparam_names, hyperparam_values):
             object.__setattr__(self, name, value)
+        object.__setattr__(self, "initialized", initialized)
         return self
 
-    def __call__(self, x, rng, inference_mode=False):
-        """Forward pass."""
+    def init(self, x: Any) -> None:
+        """Initialize paramters and put ``self`` into a valid state for
+        ``apply``. ``self`` is not guaranteed to be fully initialized until
+        ``apply`` is called.
+
+        :param x: Compatible input features.
+        """
         raise NotImplementedError()
 
-    def __repr__(self) -> str:
-        repr = self.__class__.__name__ + "("
-        for name, value in vars(self).items():
-            repr += f"{name}={value}, "
-        return repr[:-1] + ")"
-    
-    def map(self, f: Callable, *rest):
-        """Apply a map function ``f`` on ``self``'s parameters. Equivalent to
-        ``jax.tree_utils.tree_map(self, *rest, is_leaf=is_parameter)``.
-        """
-        return jtu.tree_map(f, self, *rest, is_leaf=is_parameter)
+    def apply(
+        self,
+        x: Any,
+        rng: Optional[Array],
+        inference_mode: bool = False,
+        batch_axis_name: Union[Hashable, Tuple[Hashable]] = ()
+    ) -> Tuple[Any, Any]:
+        """Perform the forward pass assuming ``init`` had been called.
 
-    def filter(self, f: Callable[[Parameter], bool], *rest):
-        """Apply a filter ``f`` on ``self``'s parameters. Filtered out
-        parameters are replaced with a Parameter whose ``trainable = None``.
+        :param x: Compatible input features.
+        :param rng: PRNG key. Only necessary for some modules.
+        :param inference_mode: Whether in inference or training mode. Default:
+            training mode.
+        :param batch_axis_name: Hashable or tuple of hashable representing
+            the batch axis name(s) when called in a `jax.vmap` or `jax.pmap`
+            context. Used by modules such as `ZNorm` to normalize along the
+            batch axis. Default: (), no batch axis.
+
+        :returns: Output features.
+
+        .. note::
+            When overriding ``rng``, set its default value to None if a key is
+            not required. MLAX uses this information to avoid splitting and
+            passing keys to modules that do not need them.
         """
-        return jtu.tree_map(
-            _create_true_filter(f), self, *rest, is_leaf=is_parameter
+        raise NotImplementedError()
+    
+    def __call__(
+        self,
+        x: Any,
+        rng: Optional[Array],
+        inference_mode: bool = False,
+        batch_axis_name: Union[Hashable, Tuple[Hashable]] = ()
+    ) -> Tuple[Any, Any]:
+        """Perform the forward pass, initializing ``self`` if needed.
+
+        :param x: Compatible input features.
+        :param rng: PRNG key. Only necessary for some modules.
+        :param inference_mode: Whether in inference or training mode. Default:
+            training mode.
+        :param batch_axis_name: Hashable or tuple of hashable representing
+            the batch axis name(s) when called in a `jax.vmap` or `jax.pmap`
+            context. Used by modules such as `ZNorm` to normalize along the
+            batch axis. Default: (), no batch axis.
+
+        :returns: Output features.
+        :returns: ``self``.
+        """
+        if self.initialized is False:
+            self.init(x)
+            self.initialized = True
+        return self.apply(x, rng, inference_mode, batch_axis_name), self
+
+    def filter(self, f=is_trainable_param, inverse=False) -> Any:
+        """Apply a filter ``f`` on ``self``'s parameters. Filtered out
+        parameters have their ``data`` field replaced with None.
+        """
+
+        if self.initialized is False:
+            raise AttributeError("cannot filter an uninitialized module")
+
+        def _filter(arg):
+            arg_copy = jtu.tree_map(lambda x: x, arg)
+            if (not f(arg_copy) if inverse else f(arg_copy)):
+                return arg_copy
+            else:
+                arg_copy.data = None
+                return arg_copy
+        return jtu.tree_map(_filter, self, is_leaf=is_leaf_param)
+
+
+    def partition(self, f=is_trainable_param) -> Tuple[Any, Any]:
+        """Partition on ``self``'s parameters on filter ``f``. Unselected
+        parameters have their ``data`` field replaced with None.
+        """
+        if self.initialized is False:
+            raise AttributeError("cannot partition an uninitialized module")
+
+        return (self.filter(f, inverse=False), self.filter(f, inverse=True))
+
+    def filter_with_path(self, f, inverse=False) -> Any:
+        """``filter`` with path."""
+
+        if self.initialized is False:
+            raise AttributeError("cannot filter an uninitialized module")
+
+        def _filter_w_path(path, arg):
+            arg_copy = jtu.tree_map(lambda x: x, arg)
+            if (not f(path, arg_copy) if inverse else f(path, arg_copy)):
+                return arg_copy
+            else:
+                arg_copy.data = None
+                return arg_copy
+        return jtu.tree_map_with_path(
+            _filter_w_path, self, is_leaf=is_leaf_param
         )
 
-    def partition(self, f: Callable[[Parameter], bool] = is_trainable, *rest):
-        """Partition on ``self``'s parameters on filter ``f`` on ``self``'s
-        parameters. Unselected parameters are replaced with a Parameter whose
-        ``trainable = None``.
-        """
+    def partition_with_path(self, f) -> Tuple[Any, Any]:
+        """``partition`` with path."""
+
+        if self.initialized is False:
+            raise AttributeError("cannot partition an uninitialized module")
+
         return (
-            jtu.tree_map(
-                _create_true_filter(f), self, *rest, is_leaf=is_parameter
-            ),
-            jtu.tree_map(
-                _create_false_filter(f), self, *rest, is_leaf=is_parameter
-            )
+            self.filter_with_path(f, inverse=False),
+            self.filter_with_path(f, inverse=True)
         )
 
     def combine(self, *rest):
-        """Combine ``rest``'s parameters with ``self``'s, with preceding args'
-        possibly overriding subsequent args' and ``self``'s.
-        """
+        """Combine ``self``'s parameters with ``rest``'s."""
         def _combine(*args):
-            for arg in args:
-                if arg.trainable is not None:
-                    return arg
-            return args[-1]
-
-        return jtu.tree_map(
-            _combine, *rest, self, is_leaf=is_parameter
-        )
-
-def fwd(
-    trainables,
-    non_trainables,
-    x: Any,
-    rng: jax.Array = None,
-    inference_mode: bool=False
-):
-    """Combine ``trainables`` with ``non_trainables`` and invoke ``call``."""
-    module = trainables.combine(non_trainables)
-    return module(x, rng, inference_mode)
-
-def is_mlax_module(m) -> bool:
-    """Whether ``m`` is a module"""
-    return isinstance(m, Module)
-
-EMPTY_PARAM = Parameter(trainable=None, data=None, name=None)
-
-def _create_true_filter(f):
-    def _filter_true(*args):
-        return args[0] if f(*args) else EMPTY_PARAM
-    return _filter_true
-
-def _create_false_filter(f):
-    def _filter_false(*args):
-        return EMPTY_PARAM if f(*args) else args[0]
-    return _filter_false
-
-class ModuleSeq(Module, MutableSequence):
-    """A container containing a mutable sequence of submodules or parameters."""
-
-    def __init__(self, submodules: Iterable[Union[Module, Parameter]]) -> None:
-        """Initialize module."""
-        super().__init__()
-        self._submodules = list(submodules)
-
-    def tree_flatten(self):
-        """Flatten into submodules."""
-        return self._submodules, ()
-
-    @classmethod
-    def tree_unflatten(cls, _, submodules):
-        """Unflatten submodules."""
-        self = cls.__new__(cls)
-        object.__setattr__(self, "_submodules", list(submodules))
-        return self
+            arg_copy = jtu.tree_map(lambda x: x, args[0])
+            for arg in args[1:]:
+                if isinstance(arg, Parameter) and arg.data is not None:
+                    arg_copy.data = arg.data
+                    break
+            return arg_copy
+        return jtu.tree_map(_combine, self, *rest, is_leaf=is_leaf_param)
 
     def __repr__(self) -> str:
-        return f"{self.__class__}({self._submodules})"
+        string = self.__class__.__name__ + "("
+        for name, value in vars(self).items():
+            string += f"{name}={value}, "
+        return string[:-2] + ")"
 
-    def __len__(self):
-        return len(self._submodules)
-    
-    def __getitem__(self, i):
-        if isinstance(i, slice):
-            return self.__class__(self._submodules[i])
+    def __delattr__(self, __name: str) -> None:
+        if self.initialized is True:
+            raise AttributeError("cannot delete attribute of an initialized module")
         else:
-            return self._submodules[i]
-    
-    def __delitem__(self, i):
-        del self._submodules[i]
-    
-    def __setitem__(self, i, val):
-        self._submodules[i] = val
-
-    def insert(self, i, val):
-        self._submodules.insert(i, val)
+            super().__delattr__(__name)

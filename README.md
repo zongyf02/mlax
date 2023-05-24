@@ -21,7 +21,7 @@ already.
 ```pip install mlax-nn```
 
 ## Quickstart<a id="quickstart"></a>
-This is a simple linear layer defined using only the MLAX Module and Parameter.
+This is a simple lazy linear layer defined in MLAX.
 
 ``` Python
 import jax
@@ -33,38 +33,53 @@ from jax import (
 from mlax import Module, Parameter
 
 class Linear(Module):
-    def __init__(self, in_features, out_features, rng):
-        rng1, rng2 = random.split(rng)
-        self.kernel_weight = Parameter(
-            trainable=True,
-            data=nn.initializers.glorot_uniform()(rng1, (in_features, out_features))
-        )
-        self.bias_weight = Parameter(
-            trainable=True,
-            data=nn.initializers.zeros(rng2, (out_features,))
-        )
+    def __init__(self, rng, out_features):
+        super().__init__()
+        self.rng = rng
+        self.out_features = out_features
+        
+        self.kernel_weight = Parameter(trainable=True)
+        self.bias_weight = Parameter(trainable=True)
     
-    def __call__(self, x, rng=None, inference_mode=False):
+    # Define a ``init`` method for lazy initialziation of weights
+    def init(self, x):
+        rng1, rng2 = random.split(self.rng)
+        self.kernel_weight.data = nn.initializers.glorot_uniform()(
+            rng1, (x.shape[-1], self.out_features)
+        )
+        self.bias_weight.data=nn.initializers.zeros(rng2, (self.out_features,))
+
+    # Define an ``apply`` method for the forward pass
+    def apply(
+        self, x, rng = None, inference_mode = False, batch_axis_name = ()
+    ):
         return x @ self.kernel_weight.data + self.bias_weight.data, self
 ```
 
 It is fully compatible with native JAX transformations:
 
 ``` Python
-def loss_fn(model, x, y):
-    pred, model = model(x)
+def loss_fn(x, y, model):
+    pred, model = model(x, rng=None, inference_mode=True)
     return jnp.mean(y - pred) ** 2, model
 
-model = Linear(3, 4, random.PRNGKey(0))
 x = jnp.ones((4, 3), dtype=jnp.float32)
 y = jnp.ones((4, 4), dtype=jnp.float32)
+model = Linear(random.PRNGKey(0), 4)
 
-(loss, model), grads = jax.jit(
+loss, updated_model = loss_fn(x, y, model)
+print(loss)
+
+# Now let's apply `jax.jit` and `jax.value_and_grad`
+(loss, updated_model), grads = jax.jit(
     jax.value_and_grad(
         loss_fn,
         has_aux=True
     )
-)(model, x, y)
+)(x, y, model)
+
+print(loss)
+print(grads)
 ```
 
 For end-to-end examples with reference PyTorch implementations, visit MLAX's

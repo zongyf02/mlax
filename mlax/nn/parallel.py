@@ -1,6 +1,9 @@
-from jax import random
-from typing import Sequence, Iterable
-from mlax import Module, ModuleSeq
+from jax import (
+    Array,
+    random
+)
+from typing import Any, Iterable, Tuple, List, Union, Hashable
+from mlax import Module, Parameter
 from mlax._utils import _needs_rng
 
 class Parallel(Module):
@@ -11,25 +14,25 @@ class Parallel(Module):
         :param layers: Layers to combine in parallel.
         """
         super().__init__()
-        self.layers = ModuleSeq(submodules=layers)        
-    
-    def __call__(self, x: Sequence, rng=None, inference_mode=False):
-        """Apply layers that do not require rng in parallel.
+        self.layers = Parameter(trainable=None, data=list(layers))
 
-        :param x: Sequence of input features, one for each layer.
-        :param rng: PRNG key. Ignored. Default: None.
-        :param inference_mode: Whether in inference or training mode. Default:
-            False.
-        
-        :returns: List of outputs from each layer.
-        :returns: Parallel layer with updated state. Possibly the same object as
-            ``self``.
-        """
+    def init(self, x: Any) -> None:
+        pass
+
+    def apply(
+        self,
+        x: Iterable[Any],
+        rng: None=None,
+        inference_mode: bool=False,
+        batch_axis_name: Union[Hashable, Tuple[Hashable]]=()
+    ) -> Tuple[List[Any], Any]:
         res = []
-        for i, (_x, layer) in enumerate(zip(x, self.layers)):
-            _x, self.layers[i] = layer(_x, None, inference_mode)
-            res.append(_x)
-        return res, self
+        for i, (layer, _x) in enumerate(zip(self.layers.data, x)):
+            _y, self.layers.data[i] = layer(
+                _x, None, inference_mode, batch_axis_name
+            )
+            res.append(_y)
+        return res
 
 class ParallelRng(Module):
     """Combination of layers that may require rng in parallel."""
@@ -39,34 +42,38 @@ class ParallelRng(Module):
         :param layers: PyTree of layers to combine in parallel.
         """
         super().__init__()
-        self.layers = ModuleSeq(submodules=layers) 
-    
-    def __call__(self, x: Sequence, rng, inference_mode=False):
-        """Apply layers that may not require rng in parallel.
+        self.layers = Parameter(trainable=None, data=list(layers))
 
-        :param x: Sequence of input features, one for each layer.
-        :param rng: PRNG key.
-        :param inference_mode: Whether in inference or training mode. Default:
-            False.
-        
-        :returns: List of outputs from each layer.
-        :returns: ParallelRng layer with updated state. Possibly the same object
-            as ``self``.
-        """
-        needs_rngs = [_needs_rng(layer) for layer in self.layers]
-        num_rngs = sum(needs_rngs)
-        if num_rngs > 1:
-            rng_iter = iter(random.split(rng, num_rngs))
+    def init(self, x: Any) -> None:
+        pass
+
+    def apply(
+        self,
+        x: Iterable[Any],
+        rng: Array,
+        inference_mode: bool=False,
+        batch_axis_name: Union[Hashable, Tuple[Hashable]]=()
+    ) -> Tuple[Any, Any]:
+        needs_rngs = [_needs_rng(layer) for layer in self.layers.data]
+        n_needs_rng = sum(needs_rngs)
+        if n_needs_rng > 1:
+            keys_iter = iter(
+                [random.fold_in(rng, i) for i in range(n_needs_rng)]
+            )
         else:
-            rng_iter = iter([rng])
+            keys_iter = iter([rng])
 
         res = []
-        for i, (_x, needs_rng, layer) in enumerate(
-            zip(x, needs_rngs, self.layers)
+        for i, (needs_rng, layer, _x) in enumerate(
+            zip(needs_rngs, self.layers.data, x)
         ):
             if needs_rng:
-                _x, self.layers[i] = layer(_x, next(rng_iter), inference_mode)
+                _x, self.layers.data[i] = layer(
+                    _x, next(keys_iter), inference_mode, batch_axis_name
+                )
             else:
-                _x, self.layers[i] = layer(_x, None, inference_mode)
+                _x, self.layers.data[i] = layer(
+                    _x, None, inference_mode, batch_axis_name
+                )
             res.append(_x)
-        return res, self
+        return res
