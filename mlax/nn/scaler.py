@@ -1,4 +1,4 @@
-from mlax import Parameter, Module
+from typing import Sequence, Optional, Union, Tuple, Hashable
 from jax import (
     Array,
     numpy as jnp,
@@ -6,7 +6,7 @@ from jax import (
     lax,
     dtypes
 )
-from typing import Any, Sequence, Optional, Union, Tuple, Hashable
+from mlax import Parameter, Module
 from mlax._utils import _canon_int_sequence
 
 class Scaler(Module):
@@ -42,7 +42,7 @@ class Scaler(Module):
 
         self.scaler_kernel = Parameter(trainable=True)
 
-    def init(self, x: Array) -> None:
+    def setup(self, x: Array) -> None:
         scaler_shape = [
             axis if axis != -1 else x.shape[i]
             for i, axis in enumerate(self.in_features) if axis != 0
@@ -51,24 +51,13 @@ class Scaler(Module):
             self.rng, scaler_shape, self.dtype
         )
     
-    def apply(
+    def forward(
         self,
         x: Array,
         rng: None=None,
         inference_mode: bool=False,
         batch_axis_name: Union[Hashable, Tuple[Hashable]]=()
-    ) -> Tuple[Array, Any]:
-        """Scale input features.
-
-        :param x: Input features. Must be of the shape ``in_feature_shape``.
-        :param rng: PRNG key. Ignored. Default: None.
-        :param inference_mode: Whether in inference or training mode. Ignored.
-            Default: False.
-        
-        :returns y: Scaled ``x``.
-        :returns: Bias layer with updated state. Possibly the same object as
-            ``self``.
-        """
+    ) -> Array:
         return lax.mul(
             x,
             lax.broadcast_in_dim(

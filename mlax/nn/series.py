@@ -1,8 +1,8 @@
+from typing import Any, Iterable, Tuple, Union, Hashable
 from jax import (
     Array,
     random
 )
-from typing import Any, Iterable, Tuple, Union, Hashable
 from mlax import Module, Parameter
 from mlax._utils import _needs_rng
 
@@ -16,16 +16,16 @@ class Series(Module):
         super().__init__()
         self.layers = Parameter(trainable=None, data=list(layers))
 
-    def init(self, x: Any) -> None:
+    def setup(self, x: Any) -> None:
         pass
 
-    def apply(
+    def forward(
         self,
         x: Any,
         rng: None=None,
         inference_mode: bool=False,
         batch_axis_name: Union[Hashable, Tuple[Hashable]]=()
-    ) -> Tuple[Any, Any]:
+    ) -> Any:
         for i, layer in enumerate(self.layers.data):
             x, self.layers.data[i] = layer(
                 x, None, inference_mode, batch_axis_name
@@ -42,16 +42,16 @@ class SeriesRng(Module):
         super().__init__()
         self.layers = Parameter(trainable=None, data=list(layers))
 
-    def init(self, x: Any) -> None:
+    def setup(self, x: Any) -> None:
         pass
 
-    def apply(
+    def forward(
         self,
         x: Any,
         rng: Array,
         inference_mode: bool=False,
         batch_axis_name: Union[Hashable, Tuple[Hashable]]=()
-    ) -> Tuple[Any, Any]:
+    ) -> Any:
         needs_rngs = [_needs_rng(layer) for layer in self.layers.data]
         n_needs_rng = sum(needs_rngs)
         if n_needs_rng > 1:

@@ -1,4 +1,4 @@
-from mlax import Parameter, Module
+from typing import Union, Sequence, Hashable, Tuple
 from jax import (
     Array,
     numpy as jnp,
@@ -7,11 +7,11 @@ from jax import (
     random,
     dtypes
 )
-from typing import Any, Union, Sequence, Hashable, Tuple
+from mlax import Parameter, Module
 from mlax._utils import (
     _canon_int_sequence,
     _compute_std_stats,
-    _standadize
+    _standardize
 )
 
 class ZNorm(Module):
@@ -61,7 +61,7 @@ class ZNorm(Module):
         self.moving_mean = Parameter(trainable=False)
         self.moving_var = Parameter(trainable=False)
 
-    def init(self, x: Array) -> None:
+    def setup(self, x: Array) -> None:
         if self.axis == "channel_last":
             shape = x.shape[-1]
         elif self.axis == "channel_first":
@@ -76,14 +76,13 @@ class ZNorm(Module):
             random.fold_in(self.rng, 1), shape, self.dtype
         )
 
-    def apply(
+    def forward(
         self,
         x: Array,
         rng: None=None,
         inference_mode: bool=False,
         batch_axis_name: Union[Hashable, Tuple[Hashable]]=()
-    ) -> Tuple[Array, Any]:
-        """Apply normalization to input features."""
+    ) -> Array:
         if self.axis == "channel_last":
             axis = list(range(x.ndim - 1))
         elif self.axis == "channel_first":
@@ -116,4 +115,4 @@ class ZNorm(Module):
                 )
             ), self.moving_var.data.dtype)
 
-        return _standadize(x, axis, mean, variance, self.epsilon)
+        return _standardize(x, axis, mean, variance, self.epsilon)

@@ -1,9 +1,9 @@
+import pytest
 from jax import (
     numpy as jnp,
     random,
     lax
 )
-import pytest
 from mlax.nn import F, FRng
 from mlax._test_utils import (
     layer_test_results,

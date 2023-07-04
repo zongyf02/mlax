@@ -1,15 +1,12 @@
-import jax
+import pytest
 from jax import (
     numpy as jnp,
     random,
-    nn,
-    lax
+    nn
 )
-import pytest
 from mlax.nn import Parallel, ParallelRng, Scaler, F, FRng
 from mlax._test_utils import (
     layer_test_results,
-    assert_equal_array,
     assert_equal_pytree
 )
 
@@ -31,16 +28,16 @@ from mlax._test_utils import (
                 jnp.ones((2, 3), jnp.bfloat16),
                 jnp.ones((2, 2), jnp.float32)
             ],
-            [
+            (
                 jnp.full((2, 4), 2, jnp.bfloat16),
                 jnp.ones((2, 3), jnp.bfloat16),
                 jnp.full((2, 2), 3, jnp.float32)
-            ],
-            [
+            ),
+            (
                 jnp.full((2, 4), 2, jnp.bfloat16),
                 jnp.full((2, 3), 2, jnp.bfloat16),
                 jnp.full((2, 2), 3, jnp.float32)
-            ]
+            )
         ),
     ]
 )
@@ -75,22 +72,22 @@ def test_parallel(
                 ),
                 FRng(train_fn=lambda x, rng: (3 * x, rng))
             )),
-            [
+            (
                 jnp.ones((2, 4), jnp.bfloat16),
                 jnp.ones((2, 3), jnp.bfloat16),
                 jnp.ones((2, 2), jnp.float32)
-            ],
+            ),
             random.PRNGKey(7),
-            [
+            (
                 jnp.full((2, 4), 2, jnp.bfloat16),
                 jnp.ones((2, 3), jnp.bfloat16),
                 (jnp.full((2, 2), 3, jnp.float32), random.PRNGKey(7))
-            ],
-            [
+            ),
+            (
                 jnp.full((2, 4), 2, jnp.bfloat16),
                 jnp.full((2, 3), 2, jnp.bfloat16),
                 (jnp.full((2, 2), 3, jnp.float32), random.PRNGKey(7))
-            ]
+            )
         ),
     ]
 )
@@ -99,7 +96,7 @@ def test_parallel_rng(
 ):
     model, (t_acts, new_t_model), (i_acts, new_i_model) = layer_test_results(
         ParallelRng, {"layers": layers}, x, rng=rng,
-        y_vmap_axis=[0, 0, (0, None)]
+        y_vmap_axis=(0, 0, (0, None))
     )
     assert model.layers.trainable is None
     assert isinstance(model.layers.data, list)

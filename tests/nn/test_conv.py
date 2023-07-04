@@ -1,9 +1,9 @@
+import pytest
 from jax import (
     numpy as jnp,
     random,
     nn
 )
-import pytest
 from mlax.nn import Conv
 from mlax._test_utils import layer_test_results, assert_equal_array
 
