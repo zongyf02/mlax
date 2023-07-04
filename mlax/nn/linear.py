@@ -1,3 +1,4 @@
+from typing import Tuple, Union, Hashable
 from jax import (
     Array,
     numpy as jnp,
@@ -5,7 +6,6 @@ from jax import (
     lax,
     dtypes
 )
-from typing import Any, Tuple, Union, Hashable
 from mlax import Parameter, Module
 from mlax._utils import (
     _canon_opt_dtype,
@@ -21,7 +21,7 @@ class Linear(Module):
         precision=None,
         accum_dtype=None,
         transposed_kernel: bool=False,
-        kernel_initializer=nn.initializers.glorot_uniform(),
+        kernel_initializer=nn.initializers.lecun_normal(),
         dtype=jnp.float32
     ):
         """Initialize a linear layer.
@@ -40,7 +40,7 @@ class Linear(Module):
         :param kernel_initializer: Initializer for kernel of shape
             ``(in_features, out_features)`` as defined by
             `jax.nn.initalizers <https://jax.readthedocs.io/en/latest/jax.nn.initializers.html>`_.
-            Default: glorot uniform.
+            Default: He normal.
         :param dtype: Type of initialized parameters. Default: float32.
         """
         super().__init__()
@@ -55,8 +55,7 @@ class Linear(Module):
 
         self.linear_kernel = Parameter(trainable=True)
 
-    def init(self, x: Array) -> None:
-        """Initialize an uninitialized linear layer."""
+    def setup(self, x: Array) -> None:
         self.linear_kernel.data = self.kernel_initializer(
             self.rng, (x.shape[-1], self.out_features), self.dtype
         )
@@ -65,14 +64,13 @@ class Linear(Module):
                 self.linear_kernel.data, (1, 0)
             )
 
-    def apply(
+    def forward(
         self,
         x: Array,
         rng: None=None,
         inference_mode: bool=False,
         batch_axis_name: Union[Hashable, Tuple[Hashable]]=()
-    ) -> Tuple[Array, Any]:
-        """Apply linear transformation to input features."""
+    ) -> Array:
         contracting_dims = (1,) if self.transposed_kernel else (0,)
         return lax.dot_general(
             x,

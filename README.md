@@ -44,7 +44,7 @@ class Linear(Module):
     # Define a ``init`` method for lazy initialziation of weights
     def init(self, x):
         rng1, rng2 = random.split(self.rng)
-        self.kernel_weight.data = nn.initializers.glorot_uniform()(
+        self.kernel_weight.data = nn.initializers.lecun_normal()(
             rng1, (x.shape[-1], self.out_features)
         )
         self.bias_weight.data=nn.initializers.zeros(rng2, (self.out_features,))

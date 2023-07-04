@@ -1,5 +1,5 @@
-from jax import Array
 from typing import Any, Callable, Optional, Tuple, Union, Hashable
+from jax import Array
 from mlax import Module
 from mlax._utils import _needs_axis_name
 
@@ -24,16 +24,16 @@ class F(Module):
         self.train_fn = train_fn
         self.infer_fn = infer_fn
     
-    def init(self, x: Any) -> None:
+    def setup(self, x: Any) -> None:
         pass
 
-    def apply(
+    def forward(
         self,
         x: Any,
         rng: None=None,
         inference_mode: bool=False,
         batch_axis_name: Union[Hashable, Tuple[Hashable]]=()
-    ) -> Tuple[Any, Any]:
+    ) -> Any:
         if self.infer_fn is None or not inference_mode:
             if _needs_axis_name(self.train_fn):
                 return self.train_fn(x, axis_name=batch_axis_name)
@@ -66,17 +66,16 @@ class FRng(Module):
         self.train_fn = train_fn
         self.infer_fn = infer_fn
     
-    def init(self, x: Any) -> None:
+    def setup(self, x: Any) -> None:
         pass
 
-    def apply(
+    def forward(
         self,
         x: Any,
         rng: Array,
         inference_mode: bool=False,
         batch_axis_name: Union[Hashable, Tuple[Hashable]]=()
-    ) -> Tuple[Any, Any]:
-        """Apply an arbitrary pure functional transform."""
+    ) -> Any:
         if self.infer_fn is None or not inference_mode:
             if _needs_axis_name(self.train_fn):
                 return self.train_fn(x, rng, axis_name=batch_axis_name)

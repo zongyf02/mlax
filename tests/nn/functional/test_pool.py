@@ -1,8 +1,7 @@
-import jax.numpy as jnp
-from jax import lax
 import pytest
+import jax.numpy as jnp
 from mlax.nn.functional import (
-    avg_pool, max_pool, sum_pool, avg_pool
+    avg_pool, max_pool, sum_pool
 )
 from mlax._test_utils import assert_equal_array
 

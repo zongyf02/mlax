@@ -1,10 +1,9 @@
+import pytest
 import jax
 from jax import (
     random,
-    nn,
-    numpy as jnp
+    nn
 )
-import pytest
 from mlax.nn.functional import z_norm
 from mlax._test_utils import assert_close_array
 

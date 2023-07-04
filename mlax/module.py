@@ -1,10 +1,11 @@
-from jax import (
-    Array,
-    tree_util as jtu,
-    random
-)
+"""MLAX module base class and parameter."""
 from abc import ABCMeta
 from typing import Any, Optional, Tuple, Union, Hashable
+from jax import (
+    Array,
+    tree_util as jtu
+)
+from mlax._utils import _identity
 
 @jtu.register_pytree_node_class
 class Parameter:
@@ -14,10 +15,11 @@ class Parameter:
         """Initialize parameter.
 
         :param trainable: Whether the parameter is trainable or non-trainable.
-            If None, indicates that the data field contains nested parameters.
+            If ``None``, indicates that the data field contains nested
+            parameters.
         :param data: The content of parameter. Must be a valid JAX type or a
             PyTree of valid JAX types.
-            Default: None.
+            Default: ``None``.
         """
         super().__init__()
         self.trainable = trainable
@@ -70,7 +72,6 @@ class _ModuleMeta(ABCMeta):
 class Module(metaclass=_ModuleMeta):
     """MLAX layer base class. PyTree of `mlax.Parameters`.
     """
-
     def __init__(self) -> None:
         """Initialize module hyperparameters."""
         self.initialized = False
@@ -105,23 +106,23 @@ class Module(metaclass=_ModuleMeta):
         object.__setattr__(self, "initialized", initialized)
         return self
 
-    def init(self, x: Any) -> None:
-        """Initialize paramters and put ``self`` into a valid state for
-        ``apply``. ``self`` is not guaranteed to be fully initialized until
-        ``apply`` is called.
+    def setup(self, x: Any) -> None:
+        """Initialize parameters and put ``self`` into a valid state for
+        ``forward``. Submodules may not be initialized until ``__call__`` is
+        called.
 
         :param x: Compatible input features.
         """
         raise NotImplementedError()
 
-    def apply(
+    def forward(
         self,
         x: Any,
         rng: Optional[Array],
         inference_mode: bool = False,
         batch_axis_name: Union[Hashable, Tuple[Hashable]] = ()
-    ) -> Tuple[Any, Any]:
-        """Perform the forward pass assuming ``init`` had been called.
+    ) -> Any:
+        """Perform the forward pass assuming ``setup`` has been called.
 
         :param x: Compatible input features.
         :param rng: PRNG key. Only necessary for some modules.
@@ -135,11 +136,23 @@ class Module(metaclass=_ModuleMeta):
         :returns: Output features.
 
         .. note::
-            When overriding ``rng``, set its default value to None if a key is
-            not required. MLAX uses this information to avoid splitting and
+            When overriding, set ``rng``'s default value to ``None`` if a key
+            is not required. MLAX uses this information to avoid splitting and
             passing keys to modules that do not need them.
         """
         raise NotImplementedError()
+    
+    def apply(
+        self,
+        x: Any,
+        rng: Optional[Array],
+        inference_mode: bool = False,
+        batch_axis_name: Union[Hashable, Tuple[Hashable]] = ()
+    ) -> Tuple[Any, Any]:
+        """Thin wrapper around ``forward`` to that returns ``self`` in addition
+        to output features. Can be jit-compiled to speed up ``__call__``.
+        """
+        return self.forward(x, rng, inference_mode, batch_axis_name), self
     
     def __call__(
         self,
@@ -163,31 +176,29 @@ class Module(metaclass=_ModuleMeta):
         :returns: ``self``.
         """
         if self.initialized is False:
-            self.init(x)
+            self.setup(x)
             self.initialized = True
-        return self.apply(x, rng, inference_mode, batch_axis_name), self
+        return self.apply(x, rng, inference_mode, batch_axis_name)
 
     def filter(self, f=is_trainable_param, inverse=False) -> Any:
         """Apply a filter ``f`` on ``self``'s parameters. Filtered out
-        parameters have their ``data`` field replaced with None.
+        parameters have their ``data`` field replaced with ``None``.
         """
-
         if self.initialized is False:
             raise AttributeError("cannot filter an uninitialized module")
 
         def _filter(arg):
-            arg_copy = jtu.tree_map(lambda x: x, arg)
-            if (not f(arg_copy) if inverse else f(arg_copy)):
+            arg_copy = jtu.tree_map(_identity, arg)
+            if (f(arg_copy) ^ inverse):
                 return arg_copy
             else:
                 arg_copy.data = None
                 return arg_copy
         return jtu.tree_map(_filter, self, is_leaf=is_leaf_param)
 
-
     def partition(self, f=is_trainable_param) -> Tuple[Any, Any]:
         """Partition on ``self``'s parameters on filter ``f``. Unselected
-        parameters have their ``data`` field replaced with None.
+        parameters have their ``data`` field replaced with ``None``.
         """
         if self.initialized is False:
             raise AttributeError("cannot partition an uninitialized module")
@@ -196,12 +207,11 @@ class Module(metaclass=_ModuleMeta):
 
     def filter_with_path(self, f, inverse=False) -> Any:
         """``filter`` with path."""
-
         if self.initialized is False:
             raise AttributeError("cannot filter an uninitialized module")
 
         def _filter_w_path(path, arg):
-            arg_copy = jtu.tree_map(lambda x: x, arg)
+            arg_copy = jtu.tree_map(_identity, arg)
             if (not f(path, arg_copy) if inverse else f(path, arg_copy)):
                 return arg_copy
             else:
@@ -213,7 +223,6 @@ class Module(metaclass=_ModuleMeta):
 
     def partition_with_path(self, f) -> Tuple[Any, Any]:
         """``partition`` with path."""
-
         if self.initialized is False:
             raise AttributeError("cannot partition an uninitialized module")
 
@@ -225,7 +234,7 @@ class Module(metaclass=_ModuleMeta):
     def combine(self, *rest):
         """Combine ``self``'s parameters with ``rest``'s."""
         def _combine(*args):
-            arg_copy = jtu.tree_map(lambda x: x, args[0])
+            arg_copy = jtu.tree_map(_identity, args[0])
             for arg in args[1:]:
                 if isinstance(arg, Parameter) and arg.data is not None:
                     arg_copy.data = arg.data

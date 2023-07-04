@@ -1,9 +1,8 @@
-import jax.numpy as jnp
+import pytest
 from jax import (
-    lax,
+    numpy as jnp,
     random
 )
-import pytest
 from mlax.nn.functional import dropout
 from mlax._test_utils import assert_equal_array
 

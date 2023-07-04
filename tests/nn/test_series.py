@@ -1,10 +1,9 @@
-import jax
+import pytest
 from jax import (
     numpy as jnp,
     random,
     nn
 )
-import pytest
 from mlax.nn import Series, SeriesRng, Linear, Bias, F, FRng
 from mlax._test_utils import (
     layer_test_results,
@@ -35,7 +34,7 @@ from mlax._test_utils import (
             jnp.ones((2, 4), jnp.bfloat16),
             jnp.full((2, 3), 5, jnp.bfloat16),
             jnp.full((2, 3), 10, jnp.bfloat16),
-        ),
+        )
     ]
 )
 def test_series(

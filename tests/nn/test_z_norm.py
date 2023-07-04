@@ -1,20 +1,16 @@
-import jax
+import pytest
 from jax import (
     numpy as jnp,
     random,
     nn,
     lax
 )
-import pytest
 from mlax.nn import ZNorm
 from mlax._test_utils import (
     layer_test_results,
     assert_equal_array,
     assert_close_array
 )
-
-def assertClose(x, y, tolerance=1e-4):
-    assert (lax.abs(lax.sub(x, y)) < tolerance).all(), f"{x}, {y}"
 
 @pytest.mark.parametrize(
     "config,x,initial_moving_mean,initial_moving_var,expected_train_output,\

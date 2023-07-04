@@ -13,3 +13,5 @@ def test_nn_import():
     assert hasattr(nn, "Parallel")
     assert hasattr(nn, "ParallelRng")
     assert hasattr(nn, "Embed")
+    assert hasattr(nn, "Recurrent")
+    assert hasattr(nn, "RecurrentRng")

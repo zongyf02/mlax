@@ -1,3 +1,5 @@
+from math import prod, sqrt
+from typing import Any, Tuple, Sequence, Union, Callable, Optional, Hashable
 from jax import (
     Array,
     numpy as jnp,
@@ -5,23 +7,22 @@ from jax import (
     lax
 )
 from mlax._utils import (
+    _identity,
     _canon_int_sequence,
     _canon_opt_int_sequence,
     _canon_padding,
     _compute_std_stats,
-    _standadize
+    _standardize
 )
-from math import prod, sqrt
-from typing import Any, Tuple, Sequence, Union, Callable, Optional, Hashable
 
-def identity(x: Any) -> Any:
+def identity(*xs: Any) -> Any:
     """Identity function.
     
     :param x: Input features.
 
     :returns y: ``x``.
     """
-    return x
+    return _identity(xs)
 
 def dropout(
     x: Array,
@@ -288,42 +289,36 @@ def avg_pool(
         lax.convert_element_type(prod(window_shape), activations.dtype)
     )
 
-def dot_product_attention_logits(
-    query: Array, key: Array
-) -> Array:
+def dot_product_attention_logits(query: Array, key: Array) -> Array:
     """Compute scaled dot-product attention logits.
     
     :param query: Query array of shape
-        ``(query_length, num_heads, query_key_depth)``.
+        ``(query_length, query_key_depth)``.
     :param key: Key array of the same dtype as ``query`` and of shape
-        ``(key_value_length, num_heads, query_key_depth)``.
+        ``(key_value_length, query_key_depth)``.
 
     :returns: Attention logits of
-        ``(num_heads, query_length, key_value_length)``.
+        ``(query_length, key_value_length)``.
     """
-    logits = lax.dot_general(query, key, (((2,), (2,)), ((1,), (1,))))
+    logits = lax.dot_general(query, key, (((1,), (1,)), ((), ())))
     return lax.div(
-        logits, lax.convert_element_type(sqrt(query.shape[2]), logits.dtype)
+        logits, lax.convert_element_type(sqrt(query.shape[1]), logits.dtype)
     )
 
-def apply_attention_weights(
-    value: Array, attention_weights: Array
-) -> Array:
+def apply_attention_weights(attention_weights: Array, value: Array) -> Array:
     """Apply attention weights to values.
 
-    :param value: Value array of shape
-        ``(key_value_length, num_heads, value_depth)``.
     :param attention_weights: Attention weights of the same dtype as ``value``
-        and of shape ``(num_heads, query_length, key_value_length)``.
+        and of shape ``(query_length, key_value_length)``.
+    :param value: Value array of shape
+        ``(key_value_length, value_depth)``.
 
     :returns activations: ``value`` with ``attention_weights`` applied, of shape
-        ``(query_length, num_heads, value_depth)``.
+        ``(query_length, value_depth)``.
     """
-    activations = lax.dot_general(
-        value, attention_weights, (((0,), (2,)), ((1,), (0,)))
+    return lax.dot_general(
+        attention_weights, value, (((1,), (0,)), ((), ()))
     )
-    # activations: (num_heads, depth, value_length)
-    return lax.transpose(activations, (2, 0, 1))
 
 def z_norm(
     x: Array,
@@ -353,4 +348,4 @@ def z_norm(
     elif axis == "channel_first":
         axis = list(range(1, x.ndim))
     mean, variance = _compute_std_stats(x, axis, batch_axis_name)
-    return _standadize(x, axis, mean, variance, epsilon)
+    return _standardize(x, axis, mean, variance, epsilon)

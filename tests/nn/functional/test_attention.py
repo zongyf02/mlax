@@ -1,10 +1,10 @@
-import jax.numpy as jnp
+import pytest
+import jax
 from jax import (
     numpy as jnp,
     lax,
     nn
 )
-import pytest
 from mlax.nn.functional import (
     dot_product_attention_logits,
     apply_attention_weights
@@ -45,7 +45,7 @@ def test_dot_product_attention(
     mask,
     expected_logits, expected_weights, expected_activations
 ):
-    logits = dot_product_attention_logits(query, key)
+    logits = jax.vmap(dot_product_attention_logits, in_axes=(1, 1))(query, key)
     assert_equal_array(logits, expected_logits)
 
     logits = jnp.where(
@@ -56,5 +56,7 @@ def test_dot_product_attention(
     weights = nn.softmax(logits)
     assert_equal_array(weights, expected_weights)
 
-    activations = apply_attention_weights(value, weights)
+    activations = jax.vmap(
+        apply_attention_weights, in_axes=(0, 1), out_axes=1
+    )(weights, value)
     assert_equal_array(activations, expected_activations)

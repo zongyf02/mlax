@@ -1,9 +1,13 @@
+"""Utilities."""
+from math import prod
+from inspect import signature
 from jax import (
     lax,
     dtypes
 )
-from math import prod
-from inspect import signature
+
+def _identity(x, *xs):
+    return x if not xs else (x, *xs)
 
 def _canon_precision_pair(precision):
     if isinstance(precision, tuple):
@@ -52,7 +56,7 @@ def _canon_norm_axis(axis):
         return _canon_int_sequence(axis, 1)
 
 def _needs_rng(module):
-    return signature(module.apply).parameters["rng"].default is not None
+    return signature(module.forward).parameters["rng"].default is not None
 
 def _needs_axis_name(fn):
     return "axis_name" in signature(fn).parameters.keys()
@@ -77,7 +81,7 @@ def _compute_std_stats(x, axis, norm_axis_name=()):
     )
     return mean, variance
 
-def _standadize(x, axis, mean, variance, epsilon=1e-05):
+def _standardize(x, axis, mean, variance, epsilon=1e-05):
     broadcast_dims = [i for i in range(x.ndim) if i not in axis]
     return lax.mul(
         lax.sub(x, lax.broadcast_in_dim(mean, x.shape, broadcast_dims)),
@@ -85,6 +89,6 @@ def _standadize(x, axis, mean, variance, epsilon=1e-05):
             lax.rsqrt(
                 lax.add(variance, lax.convert_element_type(epsilon, x.dtype))
             ),
-            x.shape, broadcast_dims 
+            x.shape, broadcast_dims
         )
     )

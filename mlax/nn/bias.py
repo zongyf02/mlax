@@ -1,3 +1,4 @@
+from typing import Sequence, Union, Tuple, Hashable
 from jax import (
     Array,
     numpy as jnp,
@@ -5,7 +6,6 @@ from jax import (
     lax,
     dtypes
 )
-from typing import Sequence, Union, Tuple, Hashable, Any
 from mlax import Parameter, Module
 from mlax._utils import _canon_int_sequence
 
@@ -42,7 +42,7 @@ class Bias(Module):
 
         self.bias_kernel = Parameter(trainable=True)
 
-    def init(self, x: Array) -> None:
+    def setup(self, x: Array) -> None:
         bias_shape = [
             axis if axis != -1 else x.shape[i]
             for i, axis in enumerate(self.in_features) if axis != 0
@@ -51,14 +51,13 @@ class Bias(Module):
             self.rng, bias_shape, self.dtype
         )
 
-    def apply(
+    def forward(
         self,
         x: Array,
         rng: None=None,
         inference_mode: bool=False,
         batch_axis_name: Union[Hashable, Tuple[Hashable]]=()
-    ) -> Tuple[Array, Any]:
-        """Add bias to input features."""
+    ) -> Array:
         return lax.add(
             x,
             lax.broadcast_in_dim(

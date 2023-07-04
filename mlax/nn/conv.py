@@ -1,3 +1,5 @@
+from functools import reduce
+from typing import Tuple, Sequence, Union, Optional, Hashable
 from jax import (
     Array,
     numpy as jnp,
@@ -5,8 +7,6 @@ from jax import (
     lax,
     dtypes
 )
-from functools import reduce
-from typing import Tuple, Sequence, Union, Optional, Hashable, Any
 from mlax import Parameter, Module
 from mlax._utils import (
     _canon_int_sequence,
@@ -32,7 +32,7 @@ class Conv(Module):
         data_format: Union[str, Tuple[str, str, str]]="channel_last",
         precision=None,
         accum_dtype=None,
-        kernel_initializer=nn.initializers.glorot_uniform(),
+        kernel_initializer=nn.initializers.lecun_normal(),
         dtype=jnp.float32
     ):
         """Initialize a Conv layer.
@@ -76,7 +76,7 @@ class Conv(Module):
             `jax.lax.conv_general_dilated`_. Default: None.
         :param kernel_initializer: Initializer for kernel of format "N..IO" as
             defined by ``jax.nn.initalizers <https://jax.readthedocs.io/en/latest/jax.nn.initializers.html>``.
-            Default:: glorot uniform.
+            Default:: He normal.
         :param dtype: Type of initialized parameters. Default: float32.
         """
         super().__init__()
@@ -102,7 +102,7 @@ class Conv(Module):
         self.conv_kernel = Parameter(trainable=True)
         self.dimension_numbers = None
 
-    def init(self, x: Array) -> None:
+    def setup(self, x: Array) -> None:
         n_spatial_dims = x.ndim - 1
         filter_shape = _canon_int_sequence(self.filter_shape, n_spatial_dims)
         if isinstance(self.data_format, tuple):
@@ -178,14 +178,13 @@ class Conv(Module):
             (i_spec, kernel_spec, o_spec)
         )
 
-    def apply(
+    def forward(
         self,
         x: Array,
         rng: None=None,
         inference_mode: bool=False,
         batch_axis_name: Union[Hashable, Tuple[Hashable]]=()
-    ) -> Tuple[Array, Any]:
-        """Apply convolutions on input features."""
+    ) -> Array:
         n_spatial_dims = x.ndim - 1
         x = lax.broadcast(x, (1,))
         x = lax.conv_general_dilated(

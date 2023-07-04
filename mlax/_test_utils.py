@@ -1,3 +1,4 @@
+"""Testing utilities."""
 import jax
 from jax import (
     numpy as jnp,
@@ -6,26 +7,31 @@ from jax import (
 )
 
 def assert_close_array(a, b, threshold=1e-04):
-    assert (lax.abs(lax.sub(a, b)) < threshold).all()
+    """Assert two arrays have similar values."""
+    assert lax.bitwise_or(
+        lax.bitwise_and(jnp.isnan(a), jnp.isnan(b)), # NaN are not equal to NaN
+        (lax.abs(lax.sub(a, b)) < threshold)
+    ).all()
 
 def assert_equal_array(a, b):
+    """Assert two arrays have the same values."""
     assert lax.bitwise_or(
         lax.bitwise_and(jnp.isnan(a), jnp.isnan(b)), # NaN are not equal to NaN
         lax.eq(a, b)
     ).all()
 
 def assert_equal_pytree(a, b):
+    """Assert two PyTrees contain equal arrays."""
     jtu.tree_map(assert_equal_array, a, b)
 
 def layer_test_results(
     cls, config, x, rng=None, batch_axis_name="N", x_vmap_axis=0, y_vmap_axis=0
 ):
+    """Return an initilized test layer and results of a training and inference
+    calls.
+    """
     layer = cls(**config)
     assert layer.initialized is False
-    _, layer = layer(
-        jtu.tree_map(lambda x: x[0], x), rng, inference_mode=True
-    )
-    assert layer.initialized is True
 
     fwd_jit = jax.jit(
         jax.vmap(
@@ -37,20 +43,42 @@ def layer_test_results(
         static_argnames=("self", "inference_mode", "batch_axis_name")
     )
 
-    train_acts, new_train_layer = fwd_jit(
+    train_init_acts, init_layer = fwd_jit(
         layer,
         x,
         rng,
         False, # inference_mode
         batch_axis_name # batch axis name
     )
+    assert init_layer.initialized is True
 
-    infer_acts, new_infer_layer = fwd_jit(
+    infer_init_acts, init_layer = fwd_jit(
         layer,
         x,
         rng,
         True, # inference_mode
         batch_axis_name # batch axis name
     )
+    assert init_layer.initialized is True
 
-    return layer, (train_acts, new_train_layer), (infer_acts, new_infer_layer)
+    train_acts, new_train_layer = fwd_jit(
+        init_layer,
+        x,
+        rng,
+        False, # inference_mode
+        batch_axis_name # batch axis name
+    )
+    assert_equal_pytree(train_acts, train_init_acts)
+
+    infer_acts, new_infer_layer = fwd_jit(
+        init_layer,
+        x,
+        rng,
+        True, # inference_mode
+        batch_axis_name # batch axis name
+    )
+    assert_equal_pytree(infer_acts, infer_init_acts)
+
+    return (
+        init_layer, (train_acts, new_train_layer), (infer_acts, new_infer_layer)
+    )
