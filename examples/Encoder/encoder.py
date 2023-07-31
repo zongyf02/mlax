@@ -45,7 +45,7 @@ class RotaryEncode(Module):
         ).reshape(x.shape)
         return x * self.cos + rotated_x * self.sin
 
-class MultiHeadedAttention(Module):
+class MultiQueryAttention(Module):
     """Multi-query attention."""
     def __init__(self, rng, num_heads, encode_fn, dropout_rate=0.1):
         """Initialize a multi-query attention block.
@@ -132,7 +132,7 @@ class MultiHeadedAttention(Module):
         else:
             weights = nn.softmax(logits)
 
-        # # weights : (num_heads, q_length, kv_length)
+        # weights : (num_heads, q_length, kv_length)
         if inference_mode is False:
             weights = dropout(weights, rng, self.dropout_rate, (0, 1, 2))
 
@@ -188,7 +188,7 @@ class EncoderBlock(Module):
         x, _ = xm
         keys_iter = iter([random.fold_in(self.rng, i) for i in range(9)])
 
-        self.attention = MultiHeadedAttention(
+        self.attention = MultiQueryAttention(
             next(keys_iter), self.num_heads, self.encode_fn, self.dropout_rate
         )
         self.layer_norm1 = Series([
