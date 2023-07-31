@@ -21,9 +21,9 @@ class RotaryEncode(Module):
         # inv_freq: (embed_dim / 2,)
         # pos: (seq_len,)
         # pos_enc: (seq_len, embed_dim / 2)
-        inv_freq = 1.0 / (
-            10000.0 ** (jnp.arange(0, embed_dim, 2, dtype=jnp.float32) / embed_dim)
-        )
+        inv_freq = 1.0 / ( 10000.0 ** (
+            jnp.arange(0, embed_dim, 2, dtype=jnp.float32) / embed_dim
+        ))
         pos = jnp.arange(seq_len, dtype=jnp.float32)
         pos_enc = lax.dot_general(pos, inv_freq, (((), ()), ((), ())))
 
@@ -45,20 +45,22 @@ class RotaryEncode(Module):
         ).reshape(x.shape)
         return x * self.cos + rotated_x * self.sin
 
-class MultiHeadedAttention(Module):
+class MultiQueryAttention(Module):
     """Multi-query attention."""
-    def __init__(self, rng, num_heads, dropout_rate=0.1):
+    def __init__(self, rng, num_heads, encode_fn, dropout_rate=0.1):
         """Initialize a multi-query attention block.
 
         :param rng: PRNG key.
         :param num_heads: Number of attention heads. Must divide ``q_depth``
             and ``v_depth``.
+        :param encode_fn: Positional encoding function applied to query and key.
         :param dropout_rate: Dropout on attention weights.
         """
         super().__init__()
 
         self.rng = rng
         self.num_heads = num_heads
+        self.encode_fn = encode_fn
         self.dropout_rate = dropout_rate
 
         self.q_proj = None
@@ -101,9 +103,11 @@ class MultiHeadedAttention(Module):
         query, self.q_proj= self.q_proj(
             query, None, inference_mode, batch_axis_name
         )
+        query = jax.vmap(self.encode_fn, in_axes=1, out_axes=1)(query)
         key, self.k_proj = self.k_proj(
             key, None, inference_mode, batch_axis_name
         )
+        key = self.encode_fn(key)
         value, self.v_proj = self.v_proj(
             value, None, inference_mode, batch_axis_name
         )
@@ -128,7 +132,7 @@ class MultiHeadedAttention(Module):
         else:
             weights = nn.softmax(logits)
 
-        # # weights : (num_heads, q_length, kv_length)
+        # weights : (num_heads, q_length, kv_length)
         if inference_mode is False:
             weights = dropout(weights, rng, self.dropout_rate, (0, 1, 2))
 
@@ -144,7 +148,7 @@ class MultiHeadedAttention(Module):
         return activations
 
 class EncoderBlock(Module):
-    """Rotary-embedding multi-query encoder."""
+    """Multi-query encoder."""
     def __init__(
         self,
         rng,
@@ -184,8 +188,8 @@ class EncoderBlock(Module):
         x, _ = xm
         keys_iter = iter([random.fold_in(self.rng, i) for i in range(9)])
 
-        self.attention = MultiHeadedAttention(
-            next(keys_iter), self.num_heads, self.dropout_rate
+        self.attention = MultiQueryAttention(
+            next(keys_iter), self.num_heads, self.encode_fn, self.dropout_rate
         )
         self.layer_norm1 = Series([
             F(lambda x: z_norm(x, "all")),
@@ -211,14 +215,13 @@ class EncoderBlock(Module):
         # mask: (num_heads, seq_len)
         x, mask = xm
 
-        # norm_x, rotary_x: (seq_len, model_depth)
+        # norm_x: (seq_len, model_depth)
         norm_x, self.layer_norm1 = self.layer_norm1(
             x, None, inference_mode, batch_axis_name
         )
-        rotary_x = self.encode_fn(norm_x)
         # attn_weights: (seq_len, model_depth)
         attn_weights, self.attention = self.attention(
-            (rotary_x, rotary_x, norm_x, mask),
+            (norm_x, norm_x, norm_x, mask),
             random.fold_in(rng, 0), inference_mode, batch_axis_name
         )
         if inference_mode is False:
