@@ -60,6 +60,14 @@ mlax.nn.parallel module
    :undoc-members:
    :show-inheritance:
 
+mlax.nn.recurrent module
+------------------------
+
+.. automodule:: mlax.nn.recurrent
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 mlax.nn.scaler module
 ---------------------
 

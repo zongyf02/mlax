@@ -2,8 +2,8 @@ Modules and Parameters
 ======================
 
 MLAX modules are PyTrees that inherit from ``mlax.Module``. Fields that are
-parameters and modules are considered children of the PyTree (parameters). All
-other fields are considered auxiliary data (hyperparameters),
+parameters and submodules are children of the PyTree. All other fields are
+considered auxiliary data.
 
 MLAX parameters inherit from ``mlax.Parameter``. They are PyTrees that wrap
 some ``data``. ``data`` can be JAX types (``jax.Array``, ``np.array``, etc.),
@@ -16,7 +16,7 @@ a PyTree. ``trainable=None`` means a parameter contains nested parameters.
 ``trainable=True`` indicates a leaf parameter whose ``data`` is trainable.
 
 MLAX modules' auxiliary data can contain non JAX types (``str``, ``lambda``,
-etc.) but they must be comparable and hashable if the module were to be
+etc.) but they must be comparable and hashable for the module to be
 jit-compiled.
 
 The following code illustrate the different possible fields a module can have.

@@ -179,23 +179,23 @@ def max_pool(
 
     :param x: Input features. Must have be unbatched thus having
         ``n_spatial_dims + 1`` dimensions.
-    :param window_shape: See the ``window_shape`` parameter of ``pooling``.
-    :param strides: See the ``strides`` parameter of ``pooling``. Default: 1.
-    :param padding: See the ``padding`` parameter of ``pooling``.
-    :param input_dilation: See the ``input_dilation`` parameter of ``pooling``.
+    :param window_shape: See the ``window_shape`` parameter of ``pool``.
+    :param strides: See the ``strides`` parameter of ``pool``. Default: 1.
+    :param padding: See the ``padding`` parameter of ``pool``.
+    :param input_dilation: See the ``input_dilation`` parameter of ``pool``.
         Default: None, no input dilation.
     :param window_dilation: See the ``window_dilation`` parameter of
-        ``pooling``. Default: None, no window dilation.
+        ``pool``. Default: None, no window dilation.
     :param data_format: "channel_last", "channel_first", or a string
         representing the kernel spec as described in
         ``jax.lax.conv_general_dilated``, but without `N` the batch dimension.
         Default: "channel_last".
     
-    :returns y: ``x`` with max pooling applied.
+    :returns y: ``x`` with max pool applied.
     """
     return pool(
         x,
-        -jnp.inf,
+        -jnp.inf, # Hack to get the min of both ints and floats
         lax.max,
         window_shape,
         strides,
@@ -218,13 +218,13 @@ def sum_pool(
 
     :param x: Input features. Must have be unbatched thus having
         ``n_spatial_dims + 1`` dimensions.
-    :param window_shape: See the ``window_shape`` parameter of ``pooling``.
-    :param strides: See the ``strides`` parameter of ``pooling``. Default: 1.
-    :param padding: See the ``padding`` parameter of ``pooling``.
-    :param input_dilation: See the ``input_dilation`` parameter of ``pooling``.
+    :param window_shape: See the ``window_shape`` parameter of ``pool``.
+    :param strides: See the ``strides`` parameter of ``pool``. Default: 1.
+    :param padding: See the ``padding`` parameter of ``pool``.
+    :param input_dilation: See the ``input_dilation`` parameter of ``pool``.
         Default: None, no input dilation.
     :param window_dilation: See the ``window_dilation`` parameter of
-        ``pooling``. Default: None, no window dilation.
+        ``pool``. Default: None, no window dilation.
     :param data_format: "channel_last", "channel_first", or a string
         representing the kernel spec as described in
         ``jax.lax.conv_general_dilated``, but without `N` the batch dimension.
@@ -257,19 +257,19 @@ def avg_pool(
 
     :param x: Input features. Must have be unbatched thus having
         ``n_spatial_dims + 1`` dimensions.
-    :param window_shape: See the ``window_shape`` parameter of ``pooling``.
-    :param strides: See the ``strides`` parameter of ``pooling``. Default: 1.
-    :param padding: See the ``padding`` parameter of ``pooling``.
-    :param input_dilation: See the ``input_dilation`` parameter of ``pooling``.
+    :param window_shape: See the ``window_shape`` parameter of ``pool``.
+    :param strides: See the ``strides`` parameter of ``pool``. Default: 1.
+    :param padding: See the ``padding`` parameter of ``pool``.
+    :param input_dilation: See the ``input_dilation`` parameter of ``pool``.
         Default: None, no input dilation.
     :param window_dilation: See the ``window_dilation`` parameter of
-        ``pooling``. Default: None, no window dilation.
+        ``pool``. Default: None, no window dilation.
     :param data_format: "channel_last", "channel_first", or a string
         representing the kernel spec as described in
         ``jax.lax.conv_general_dilated``, but without `N` the batch dimension.
         Default: "channel_last".
 
-    :returns y: ``x`` with average pooling applied.
+    :returns y: ``x`` with average pool applied.
     """
     n_spatial_dims = x.ndim - 1
     window_shape = _canon_int_sequence(window_shape, n_spatial_dims)

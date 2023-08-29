@@ -75,6 +75,8 @@ class Module(metaclass=_ModuleMeta):
     def __init__(self) -> None:
         """Initialize module hyperparameters."""
         self.initialized = False
+        """Whether a module's hyperparameters, parameters, and submodules are
+        all initialized."""
 
     def tree_flatten_with_keys(self):
         """Flatten into parameters and auxiliary hyperparameters."""
@@ -107,9 +109,7 @@ class Module(metaclass=_ModuleMeta):
         return self
 
     def setup(self, x: Any) -> None:
-        """Initialize parameters and put ``self`` into a valid state for
-        ``forward``. Submodules may not be initialized until ``__call__`` is
-        called.
+        """Initialize parameters. Submodules may not be initialized.
 
         :param x: Compatible input features.
         """
@@ -123,9 +123,21 @@ class Module(metaclass=_ModuleMeta):
         batch_axis_name: Union[Hashable, Tuple[Hashable]] = ()
     ) -> Any:
         """Perform the forward pass assuming ``setup`` has been called.
+         
+         .. note::
+            Because ``setup`` may not initialize submodules, ``forward`` may
+            need to initialize submodules before using them. This is commonly
+            done by calling their ``__call__`` method, recursively initializing
+            them.
 
         :param x: Compatible input features.
         :param rng: PRNG key. Only necessary for some modules.
+
+        .. note::
+            When overriding, set ``rng``'s default value to ``None`` if a key
+            is not required. MLAX uses this information to avoid splitting and
+            passing keys to modules that do not need them.
+
         :param inference_mode: Whether in inference or training mode. Default:
             training mode.
         :param batch_axis_name: Hashable or tuple of hashable representing
@@ -134,11 +146,6 @@ class Module(metaclass=_ModuleMeta):
             batch axis. Default: (), no batch axis.
 
         :returns: Output features.
-
-        .. note::
-            When overriding, set ``rng``'s default value to ``None`` if a key
-            is not required. MLAX uses this information to avoid splitting and
-            passing keys to modules that do not need them.
         """
         raise NotImplementedError()
     
@@ -161,7 +168,8 @@ class Module(metaclass=_ModuleMeta):
         inference_mode: bool = False,
         batch_axis_name: Union[Hashable, Tuple[Hashable]] = ()
     ) -> Tuple[Any, Any]:
-        """Perform the forward pass, initializing ``self`` if needed.
+        """``setup`` if needed then ``apply``. Should initialize ``self`` and
+        set ``initialized`` to True.
 
         :param x: Compatible input features.
         :param rng: PRNG key. Only necessary for some modules.
@@ -173,7 +181,7 @@ class Module(metaclass=_ModuleMeta):
             batch axis. Default: (), no batch axis.
 
         :returns: Output features.
-        :returns: ``self``.
+        :returns: Initialized ``self``.
         """
         if self.initialized is False:
             self.setup(x)
