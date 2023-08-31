@@ -14,27 +14,27 @@ from mlax.nn.functional import (
     dropout
 )
 
-class RotaryEncode(Module):
-    """Rotary encoding."""
-    def __init__(self, seq_len, embed_dim):
+class RoPE(Module):
+    """Rotary positional encoding."""
+    def __init__(self, seq_len, embed_size):
         super().__init__()
-        # inv_freq: (embed_dim / 2,)
+        # inv_freq: (embed_size / 2,)
         # pos: (seq_len,)
-        # pos_enc: (seq_len, embed_dim / 2)
+        # pos_enc: (seq_len, embed_size / 2)
         inv_freq = 1.0 / ( 10000.0 ** (
-            jnp.arange(0, embed_dim, 2, dtype=jnp.float32) / embed_dim
+            jnp.arange(0, embed_size, 2, dtype=jnp.float32) / embed_size
         ))
         pos = jnp.arange(seq_len, dtype=jnp.float32)
         pos_enc = lax.dot_general(pos, inv_freq, (((), ()), ((), ())))
 
-        # sin_enc, cos_enc: (seq_len, embed_dim / 2)
-        sin_enc = lax.sin(pos_enc)
-        cos_enc = lax.cos(pos_enc)
+        # pos_enc: (seq_len, embed_size)
+        pos_enc = jnp.stack([pos_enc, pos_enc], axis=-1).reshape(
+            (seq_len, embed_size)
+        )
 
-        # sin, cos: (seq_len, embed_dim)
-        shape = pos_enc.shape[:-1] + (-1,)
-        self.sin = jnp.stack([sin_enc, sin_enc], axis=-1).reshape(shape)
-        self.cos = jnp.stack([cos_enc, cos_enc], axis=-1).reshape(shape)
+        # sin_enc, cos_enc: (seq_len, embed_size)
+        self.sin = lax.sin(pos_enc)
+        self.cos = lax.cos(pos_enc)
 
     def setup(self, x):
         pass
@@ -75,7 +75,7 @@ class MultiQueryAttention(Module):
         _, v_depth  = value.shape
         v_head_depth = v_depth // self.num_heads
 
-        keys_iter = iter([random.fold_in(self.rng, i) for i in range(6)])
+        keys_iter = iter([random.fold_in(self.rng, i) for i in range(5)])
 
         self.q_proj = Series([
             Linear(next(keys_iter), q_depth),
@@ -89,17 +89,16 @@ class MultiQueryAttention(Module):
 
         self.fc = Series([
             F(lambda x: x.reshape((q_len, v_depth))),
-            Linear(next(keys_iter), v_depth),
-            Bias(next(keys_iter), (0, -1))
+            Linear(next(keys_iter), v_depth)
         ])
-    
+
     def forward(self, qkvm, rng, inference_mode=False, batch_axis_name=()):
         query, key, value, mask = qkvm
 
         # query: (q_length, q_depth) -> (q_length, num_heads, qk_head_depth)
         # key: (kv_length, k_depth) -> (kv_length, qk_head_depth)
         # value: (kv_length, v_depth) -> (kv_length, v_head_depth)
-        # mask: (num_heads, seq_len, seq_len)
+        # mask: broadcastable to (num_heads, q_length, kv_length)
         query, self.q_proj= self.q_proj(
             query, None, inference_mode, batch_axis_name
         )
@@ -119,18 +118,8 @@ class MultiQueryAttention(Module):
 
         # logits, weights: (num_heads, q_length, kv_length)
         if mask is not None:
-            seq_len = len(mask)
-            logits = jnp.where(
-                lax.broadcast_in_dim(mask, (1, 1, seq_len), (2,)),
-                logits, lax.convert_element_type(-jnp.inf, logits.dtype)
-            )
-            weights = nn.softmax(logits)
-            weights = jnp.where(
-                lax.broadcast_in_dim(mask, (1, seq_len, 1), (1,)),
-                weights, lax.convert_element_type(0, weights.dtype)
-            )
-        else:
-            weights = nn.softmax(logits)
+            logits = jnp.where(mask, logits, -jnp.inf)
+        weights = nn.softmax(logits)
 
         # weights : (num_heads, q_length, kv_length)
         if inference_mode is False:
@@ -138,7 +127,7 @@ class MultiQueryAttention(Module):
 
         # activations: (q_length, num_heads, v_head_depth)
         activations = jax.vmap(
-            apply_attention_weights, in_axes=(1, None), out_axes=1
+            apply_attention_weights, in_axes=(0, None), out_axes=1
         )(weights, value)
 
         # activations: (q_length, v_depth)
@@ -161,7 +150,6 @@ class EncoderBlock(Module):
         """ Initialize an encoder block.
 
         :param rng: PRNG key for weight initialization.
-        :param hidden_size: Dimention of the multi-query attention block.
         :param num_heads: Number of attention heads.
         :param ff_size: Dimension of the feedforward layer.
         :param encode_fn: Positional encoding function applied to query and key.
@@ -212,7 +200,7 @@ class EncoderBlock(Module):
 
     def forward(self, xm, rng, inference_mode=False, batch_axis_name=()):
         # x: (seq_len, model_depth)
-        # mask: (num_heads, seq_len)
+        # mask: (seq_len)
         x, mask = xm
 
         # norm_x: (seq_len, model_depth)
@@ -238,9 +226,10 @@ class EncoderBlock(Module):
         acts, self.expansion = self.expansion(
             norm_attn_weights, None, inference_mode, batch_axis_name
         )
+        acts = self.act_fn(acts)
         if inference_mode is False:
             acts = dropout(
-                self.act_fn(acts), random.fold_in(rng, 2), self.dropout_rate, (0, 1)
+                acts, random.fold_in(rng, 2), self.dropout_rate, (0, 1)
             )
         # acts: (seq_len, model_depth)
         acts, self.contraction = self.contraction(
