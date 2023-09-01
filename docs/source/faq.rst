@@ -10,9 +10,9 @@ hashable.
 
 Modules` ``filter`` / ``partition`` functions are throwing ``AttributeError: cannot filter/partition an uninitialized module``
 --------------------------------------------------------------------------------------------------------------------------------
-Uninitialized modules' parameters are not fully set, so filtering and
-partitioning their parameters is disallowed. Initialize the modules by using
-the ``__call__`` function on sample inputs.
+Uninitialized modules have unset parameters and/or uninitialized submodules. So,
+filtering and partitioning their parameters are disallowed. Initialize the
+modules by using the ``__call__`` function on sample inputs.
 
 How to perform mixed-precision training in mlax?
 ------------------------------------------------

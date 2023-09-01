@@ -11,13 +11,14 @@ from mlax.nn.functional import dropout
 class LSTMCell(Module):
     """LSTM Cell"""
     def __init__(self, rng):
-        """Initialize an optimized LSTM cell with concatenated projections.
+        """Initialize a LSTM cell with fused projections.
         
         :param rng: PRNG key.
         """
         super().__init__()
 
         self.rng = rng
+
         self.input_projs = None
         self.hidden_state_projs = None
         self.biases = None
@@ -64,25 +65,19 @@ class LSTMCell(Module):
 
 class BiLSTMBlock(Module):
     """Bidirectional LSTM layer."""
-    def __init__(self, rng, dropout_rate=0.1):
-        """Initialize a bidirectional LSTM layer without an output projection
-        to maintain hidden-size.
+    def __init__(self, rng, hidden_size, dropout_rate=0.1):
+        """Initialize a bidirectional LSTM layer with an optional output
+        projection.
 
         :param rng: PRNG key.
+        :param hidden_size: Size of hidden and cell state.
         :param dropout_rate: Dropout on outputs.
         """
         super().__init__()
 
         self.rng = rng
-        self.drop_out_rate = dropout_rate
-
-        self.lstm1 = None
-        self.lstm2 = None
-        self.proj = None
-
-    def setup(self, xm):
-        xs, _ = xm
-        _, hidden_size = xs.shape
+        self.hidden_size = hidden_size
+        self.dropout_rate = dropout_rate
 
         self.lstm1 = Recurrent(
             LSTMCell(random.fold_in(self.rng, 0)), reverse=False
@@ -90,15 +85,17 @@ class BiLSTMBlock(Module):
         self.lstm2 = Recurrent(
             LSTMCell(random.fold_in(self.rng, 1)), reverse=True
         )
-        self.proj = Linear(random.fold_in(self.rng, 2), hidden_size)
+
+    def setup(self, xm):
+        pass
 
     def forward(self, xm, rng, inference_mode=False, batch_axis_name=()):
-        # xs: (max_seq_len, hidden_size)
+        # xs: (max_seq_len, input_size)
         # zeros: (hidden_size,)
         # seq_len: (max_seq_len,)
         xs, mask = xm
-        max_seq_len, hidden_size = xs.shape
-        zeros = jnp.zeros((hidden_size,), xs.dtype)
+        max_seq_len, _ = xs.shape
+        zeros = jnp.zeros((self.hidden_size,), xs.dtype)
         seq_len = jnp.sum(mask, axis=0)
 
         def _dynamic_roll(xs, shift):
@@ -132,10 +129,6 @@ class BiLSTMBlock(Module):
                 activations, lax.convert_element_type(0, xs.dtype)
             )
         if inference_mode is False:
-            activations = dropout(activations, rng, self.drop_out_rate, (0, 1))
+            activations = dropout(activations, rng, self.dropout_rate, (0, 1))
 
-        # activations: (max_seq_len, hidden_size)
-        activations, self.proj = self.proj(
-            activations, None, inference_mode, batch_axis_name
-        )
         return activations, mask
