@@ -91,8 +91,8 @@ class BiLSTMBlock(Module):
 
     def forward(self, xm, rng, inference_mode=False, batch_axis_name=()):
         # xs: (max_seq_len, input_size)
+        # mask: (max_seq_len,)
         # zeros: (hidden_size,)
-        # seq_len: (max_seq_len,)
         xs, mask = xm
         max_seq_len, _ = xs.shape
         zeros = jnp.zeros((self.hidden_size,), xs.dtype)
@@ -125,7 +125,7 @@ class BiLSTMBlock(Module):
         activations = lax.concatenate((ys1, ys2), 1)
         if mask is not None:
             activations = jnp.where(
-                lax.broadcast_in_dim(mask, (max_seq_len, 1), (0,)),
+                jnp.expand_dims(mask, axis=1),
                 activations, lax.convert_element_type(0, xs.dtype)
             )
         if inference_mode is False:
