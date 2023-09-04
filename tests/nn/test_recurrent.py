@@ -38,7 +38,7 @@ from mlax._test_utils import (
             {
                 "cell": F(
                     lambda xh: xh,
-                    lambda xh: ((xh[0] + xh[1], xh[0] + xh[1] + 1), xh[1] + 1)
+                    lambda xh: ((xh[0] + xh[1], xh[0] + xh[1] + 1), xh[1] + 2)
                 ),
                 "reverse": True,
                 "unroll": 2
@@ -53,10 +53,10 @@ from mlax._test_utils import (
             ),
             (
                 (
-                    jnp.full((1, 10), 10, dtype=jnp.int16),
-                    jnp.full((1, 10), 11, dtype=jnp.int16),
+                    jnp.expand_dims(jnp.arange(19, 9, -1, dtype=jnp.int16), 0),
+                    jnp.expand_dims(jnp.arange(20, 10, -1, dtype=jnp.int16), 0),
                 ),
-                jnp.full((1,), 11, dtype=jnp.int8)
+                jnp.full((1,), 21, dtype=jnp.int8)
             )
         ),
     ]
