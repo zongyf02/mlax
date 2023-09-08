@@ -39,7 +39,7 @@ The following code illustrate the different possible fields a module can have.
             self.g = Foo() # Ok, submodule
             self.h = "abc" # Ok, hyperparameter
             self.i = 1 # Ok, hyperparameter
-            # self.j = [1, 2, 3] # Not ok, not hashable
+            # self.j = [1, 2, 3] # Not ok, not hashable hyperparameter
 
 .. note::
     MLAX modules use ``vars()`` to determine their fields during PyTree
@@ -50,10 +50,8 @@ To define a custom module, inherit from ``mlax.Module`` and implement three
 functions:
 
 * ``__init__`` to initialize the custom module's hyperparameters.
-* ``init`` to initialize the trainable and non-trainable parameters given a
-    sample input.
-* ``apply`` to perform the forward pass assuming the custom module has been
-    initialized with ``init``.
+* ``init`` to initialize the trainable and non-trainable parameters given a sample input.
+* ``apply`` to perform the forward pass assuming the custom module has been initialized with ``init``.
 
 MLAX module implements the ``__call__`` function, which initilizes the module
 and submodules if they are not initialized. The function then performs the

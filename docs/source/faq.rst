@@ -8,7 +8,7 @@ hyperparameters are comparable and hashable. Jit-compiled functions only operate
 on valid JAX types and require their static arguments to be comparable and
 hashable.
 
-Modules` ``filter`` / ``partition`` functions are throwing ``AttributeError: cannot filter/partition an uninitialized module``
+Modules' ``filter`` / ``partition`` functions are throwing ``AttributeError: cannot filter/partition an uninitialized module``
 --------------------------------------------------------------------------------------------------------------------------------
 Uninitialized modules have unset parameters and/or uninitialized submodules. So,
 filtering and partitioning their parameters are disallowed. Initialize the
