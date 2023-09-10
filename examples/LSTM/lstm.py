@@ -23,7 +23,7 @@ class LSTMCell(Module):
         self.hidden_state_projs = None
         self.biases = None
     
-    def setup(self, xhc):
+    def set_up(self, xhc):
         _, (_, cell_state) = xhc
         proj_len = len(cell_state) * 4
         self.input_projs = Linear(
@@ -86,7 +86,7 @@ class BiLSTMBlock(Module):
             LSTMCell(random.fold_in(self.rng, 1)), reverse=True
         )
 
-    def setup(self, xm):
+    def set_up(self, xm):
         pass
 
     def forward(self, xm, rng, inference_mode=False, batch_axis_name=()):

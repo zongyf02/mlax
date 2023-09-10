@@ -45,7 +45,7 @@ class Recurrent(Module):
         self.reverse = bool(reverse)
         self.unroll = int(unroll)
     
-    def setup(self, xh: Tuple[Any, Any]) -> None:
+    def set_up(self, xh: Tuple[Any, Any]) -> None:
         pass
 
     def forward(
@@ -109,7 +109,7 @@ class RecurrentRng(Module):
         self.reverse = bool(reverse)
         self.unroll = int(unroll)
     
-    def setup(self, xh: Tuple[Any, Any]) -> None:
+    def set_up(self, xh: Tuple[Any, Any]) -> None:
         pass
 
     def forward(

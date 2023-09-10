@@ -24,7 +24,7 @@ class F(Module):
         self.train_fn = train_fn
         self.infer_fn = infer_fn
     
-    def setup(self, x: Any) -> None:
+    def set_up(self, x: Any) -> None:
         pass
 
     def forward(
@@ -66,7 +66,7 @@ class FRng(Module):
         self.train_fn = train_fn
         self.infer_fn = infer_fn
     
-    def setup(self, x: Any) -> None:
+    def set_up(self, x: Any) -> None:
         pass
 
     def forward(

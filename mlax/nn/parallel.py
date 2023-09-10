@@ -16,7 +16,7 @@ class Parallel(Module):
         super().__init__()
         self.layers = Parameter(trainable=None, data=list(layers))
 
-    def setup(self, x: Any) -> None:
+    def set_up(self, x: Any) -> None:
         pass
 
     def forward(
@@ -44,7 +44,7 @@ class ParallelRng(Module):
         super().__init__()
         self.layers = Parameter(trainable=None, data=list(layers))
 
-    def setup(self, x: Any) -> None:
+    def set_up(self, x: Any) -> None:
         pass
 
     def forward(

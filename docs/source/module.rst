@@ -46,16 +46,19 @@ The following code illustrate the different possible fields a module can have.
     flattening and unflattening. This means all variables must be stored in
     ``__dict__``. Avoid storing variables in ``__slots__``.
 
+Custom Modules
+--------------
+
 To define a custom module, inherit from ``mlax.Module`` and implement three
 functions:
 
-* ``__init__`` to initialize the custom module's hyperparameters.
-* ``init`` to initialize the trainable and non-trainable parameters given a sample input.
-* ``apply`` to perform the forward pass assuming the custom module has been initialized with ``init``.
+* ``__init__`` to initialize the module's hyperparameters.
+* ``set_up`` to initialize the parameters given a sample input. Submodules may not be initialized.
+* ``forward`` to perform the forward pass assuming ``set_up`` has been called. May need to initialize submodules; this is usually done automatically with ``__call__``.
 
-MLAX module implements the ``__call__`` function, which initilizes the module
-and submodules if they are not initialized. The function then performs the
-forward pass and returns the results and an updated ``self``.
+MLAX module implements the ``__call__`` function, which ``set_up`` the current
+module if not already. The function then calls ``forward`` and returns the
+results and an updated ``self``.
 
 .. code-block:: python
 
@@ -64,21 +67,26 @@ forward pass and returns the results and an updated ``self``.
             super().__init__()
             ...
         
-        def init(self, x: Any) -> None:
+        def set_up(self, x: Any):
             ...
 
-        def apply(
+        def forward(
             self,
             x: Any,
             rng: Optional[Array],
             inference_mode: bool = False,
             batch_axis_name: Union[Hashable, Tuple[Hashable]] = ()
-        ) -> Tuple[Any, Any]:
+        ):
             ...
 
-Parameters can always be mutated, even in ``apply``. Hyperparameters can also be
-mutated in ``apply``, but this may result in recompilation inside a ``jax.jit``.
-Both parameters and hyperparameters cannot be deleted once initialized.
+Parameters can be mutated in ``forward``. So, it should be easy to implement a
+stateful operation like batch norm.
+
+Hyperparameters can also be mutated in ``forward``, but this may result in
+recompilation inside a ``jax.jit``.
+
+Model Surgery
+-------------
 
 A module can be treated like any other PyTree, but MLAX modules have some
 convenience functions to filter, partition, and combine module parameters.

@@ -75,8 +75,8 @@ class Module(metaclass=_ModuleMeta):
     def __init__(self) -> None:
         """Initialize module hyperparameters."""
         self.initialized = False
-        """Whether a module's hyperparameters, parameters, and submodules are
-        all initialized."""
+        """Whether a module (hyperparameters, parameters, and submodules) is
+        initialized."""
 
     def tree_flatten_with_keys(self):
         """Flatten into parameters and auxiliary hyperparameters."""
@@ -108,7 +108,7 @@ class Module(metaclass=_ModuleMeta):
         object.__setattr__(self, "initialized", initialized)
         return self
 
-    def setup(self, x: Any) -> None:
+    def set_up(self, x: Any) -> None:
         """Initialize parameters. Submodules may not be initialized.
 
         :param x: Compatible input features.
@@ -122,13 +122,12 @@ class Module(metaclass=_ModuleMeta):
         inference_mode: bool = False,
         batch_axis_name: Union[Hashable, Tuple[Hashable]] = ()
     ) -> Any:
-        """Perform the forward pass assuming ``setup`` has been called.
+        """Perform the forward pass assuming ``set_up`` has been called.
          
          .. note::
-            Because ``setup`` may not initialize submodules, ``forward`` may
+            Because ``set_up`` may not initialize submodules, ``forward`` may
             need to initialize submodules before using them. This is commonly
-            done by calling their ``__call__`` method, recursively initializing
-            them.
+            done recursively by using their ``__call__`` method.
 
         :param x: Compatible input features.
         :param rng: PRNG key. Only necessary for some modules.
@@ -141,26 +140,14 @@ class Module(metaclass=_ModuleMeta):
         :param inference_mode: Whether in inference or training mode. Default:
             training mode.
         :param batch_axis_name: Hashable or tuple of hashable representing
-            the batch axis name(s) when called in a `jax.vmap` or `jax.pmap`
-            context. Used by modules such as `ZNorm` to normalize along the
+            the batch axis name(s) when called in a ``jax.vmap`` or ``jax.pmap``
+            context. Used by modules such as ``ZNorm`` to normalize along the
             batch axis. Default: (), no batch axis.
 
         :returns: Output features.
         """
         raise NotImplementedError()
-    
-    def apply(
-        self,
-        x: Any,
-        rng: Optional[Array],
-        inference_mode: bool = False,
-        batch_axis_name: Union[Hashable, Tuple[Hashable]] = ()
-    ) -> Tuple[Any, Any]:
-        """Thin wrapper around ``forward`` to that returns ``self`` in addition
-        to output features. Can be jit-compiled to speed up ``__call__``.
-        """
-        return self.forward(x, rng, inference_mode, batch_axis_name), self
-    
+
     def __call__(
         self,
         x: Any,
@@ -168,8 +155,8 @@ class Module(metaclass=_ModuleMeta):
         inference_mode: bool = False,
         batch_axis_name: Union[Hashable, Tuple[Hashable]] = ()
     ) -> Tuple[Any, Any]:
-        """``setup`` if needed then ``apply``. Should initialize ``self`` and
-        set ``initialized`` to True.
+        """``set_up`` if needed then ``forward``, returning the results and
+        initialized ``self``.
 
         :param x: Compatible input features.
         :param rng: PRNG key. Only necessary for some modules.
@@ -184,17 +171,15 @@ class Module(metaclass=_ModuleMeta):
         :returns: Initialized ``self``.
         """
         if self.initialized is False:
-            self.setup(x)
-            self.initialized = True
-        return self.apply(x, rng, inference_mode, batch_axis_name)
+            self.set_up(x)
+        ret = self.forward(x, rng, inference_mode, batch_axis_name)
+        self.initialized = True
+        return ret, self
 
     def filter(self, f=is_trainable_param, inverse=False) -> Any:
         """Apply a filter ``f`` on ``self``'s parameters. Filtered out
         parameters have their ``data`` field replaced with ``None``.
         """
-        if self.initialized is False:
-            raise AttributeError("cannot filter an uninitialized module")
-
         def _filter(arg):
             arg_copy = jtu.tree_map(_identity, arg)
             if (f(arg_copy) ^ inverse):
@@ -208,16 +193,10 @@ class Module(metaclass=_ModuleMeta):
         """Partition on ``self``'s parameters on filter ``f``. Unselected
         parameters have their ``data`` field replaced with ``None``.
         """
-        if self.initialized is False:
-            raise AttributeError("cannot partition an uninitialized module")
-
         return (self.filter(f, inverse=False), self.filter(f, inverse=True))
 
     def filter_with_path(self, f, inverse=False) -> Any:
         """``filter`` with path."""
-        if self.initialized is False:
-            raise AttributeError("cannot filter an uninitialized module")
-
         def _filter_w_path(path, arg):
             arg_copy = jtu.tree_map(_identity, arg)
             if (not f(path, arg_copy) if inverse else f(path, arg_copy)):
@@ -231,9 +210,6 @@ class Module(metaclass=_ModuleMeta):
 
     def partition_with_path(self, f) -> Tuple[Any, Any]:
         """``partition`` with path."""
-        if self.initialized is False:
-            raise AttributeError("cannot partition an uninitialized module")
-
         return (
             self.filter_with_path(f, inverse=False),
             self.filter_with_path(f, inverse=True)
@@ -255,9 +231,3 @@ class Module(metaclass=_ModuleMeta):
         for name, value in vars(self).items():
             string += f"{name}={value}, "
         return string[:-2] + ")"
-
-    def __delattr__(self, __name: str) -> None:
-        if self.initialized is True:
-            raise AttributeError("cannot delete attribute of an initialized module")
-        else:
-            super().__delattr__(__name)

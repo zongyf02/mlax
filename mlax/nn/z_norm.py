@@ -61,7 +61,7 @@ class ZNorm(Module):
         self.moving_mean = Parameter(trainable=False)
         self.moving_var = Parameter(trainable=False)
 
-    def setup(self, x: Array) -> None:
+    def set_up(self, x: Array) -> None:
         if self.axis == "channel_last":
             shape = x.shape[-1]
         elif self.axis == "channel_first":

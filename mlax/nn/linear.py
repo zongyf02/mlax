@@ -55,7 +55,7 @@ class Linear(Module):
 
         self.linear_kernel = Parameter(trainable=True)
 
-    def setup(self, x: Array) -> None:
+    def set_up(self, x: Array) -> None:
         self.linear_kernel.data = self.kernel_initializer(
             self.rng, (x.shape[-1], self.out_features), self.dtype
         )

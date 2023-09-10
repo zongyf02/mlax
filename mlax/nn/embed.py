@@ -38,7 +38,7 @@ class Embed(Module):
 
         self.embed_kernel = Parameter(trainable=True)
 
-    def setup(self, x: Array) -> None:
+    def set_up(self, x: Array) -> None:
         self.embed_kernel.data=self.embed_initializer(
             self.rng, (self.vocab_size, self.embed_dim), self.dtype
         )

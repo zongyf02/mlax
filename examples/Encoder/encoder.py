@@ -36,7 +36,7 @@ class RoPE(Module):
         self.sin = lax.sin(pos_enc)
         self.cos = lax.cos(pos_enc)
 
-    def setup(self, x):
+    def set_up(self, x):
         pass
 
     def forward(self, x, rng=None, inference_mode=False, batch_axis_name=()):
@@ -68,7 +68,7 @@ class MultiQueryAttention(Module):
         self.v_proj = None
         self.fc = None
 
-    def setup(self, qkvm) -> None:
+    def set_up(self, qkvm) -> None:
         query, _, value, _ = qkvm
         q_len, q_depth = query.shape
         qk_head_depth = q_depth // self.num_heads
@@ -172,7 +172,7 @@ class EncoderBlock(Module):
         self.expansion = None
         self.contraction = None
 
-    def setup(self, xm):
+    def set_up(self, xm):
         x, _ = xm
         keys_iter = iter([random.fold_in(self.rng, i) for i in range(9)])
 
