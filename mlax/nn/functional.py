@@ -341,6 +341,7 @@ def z_norm(
 
     :returns: ``x`` with normalization applied.
     """
+    axis = str(axis) if isinstance(axis, str) else _canon_int_sequence(axis, 1)
     if axis == "all":
         axis = list(range(x.ndim))
     elif axis == "channel_last":
