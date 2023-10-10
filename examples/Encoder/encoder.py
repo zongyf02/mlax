@@ -180,12 +180,12 @@ class EncoderBlock(Module):
             next(keys_iter), self.num_heads, self.encode_fn, self.dropout_rate
         )
         self.layer_norm1 = Series([
-            F(lambda x: z_norm(x, "all")),
+            F(lambda x: z_norm(x, 1)),
             Scaler(next(keys_iter), (0, -1)),
             Bias(next(keys_iter), (0, -1))
         ])
         self.layer_norm2 = Series([
-            F(lambda x: z_norm(x, "all")),
+            F(lambda x: z_norm(x, 1)),
             Scaler(next(keys_iter), (0, -1)),
             Bias(next(keys_iter), (0, -1))
         ])
@@ -222,22 +222,18 @@ class EncoderBlock(Module):
             lax.add(x, attn_weights), None, batch_axis_name
         )
 
-        # activations: (seq_len, ff_size)
+        # acts: (seq_len, ff_size)
         acts, self.expansion = self.expansion(
             norm_attn_weights, None, inference_mode, batch_axis_name
         )
         acts = self.act_fn(acts)
-        if inference_mode is False:
-            acts = dropout(
-                acts, random.fold_in(rng, 2), self.dropout_rate, (0, 1)
-            )
         # acts: (seq_len, model_depth)
         acts, self.contraction = self.contraction(
             acts, None, inference_mode, batch_axis_name
         )
         if inference_mode is False:
             acts = dropout(
-                acts, random.fold_in(rng, 3), self.dropout_rate, (0, 1)
+                acts, random.fold_in(rng, 2), self.dropout_rate, (0, 1)
             )
 
         return lax.add(x, acts), mask
