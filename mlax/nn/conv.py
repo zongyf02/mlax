@@ -102,7 +102,7 @@ class Conv(Module):
         self.conv_kernel = Parameter(trainable=True)
         self.dimension_numbers = None
 
-    def setup(self, x: Array) -> None:
+    def set_up(self, x: Array) -> None:
         n_spatial_dims = x.ndim - 1
         filter_shape = _canon_int_sequence(self.filter_shape, n_spatial_dims)
         if isinstance(self.data_format, tuple):

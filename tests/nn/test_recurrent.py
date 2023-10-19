@@ -3,7 +3,7 @@ from jax import (
     random,
     numpy as jnp
 )
-from mlax.nn import Recurrent, RecurrentRng, F, FRng
+from mlax.nn import Recurrent, F
 from mlax._test_utils import (
     layer_test_results,
     assert_equal_pytree
@@ -77,7 +77,7 @@ def test_recurrent(
     [
         (
             {
-                "cell": FRng(
+                "cell": F(
                     lambda xh, rng: ((xh[0] + xh[1], rng), xh[1] + 2),
                     lambda xh, rng: ((xh[0], rng), xh[1])
                 ),
@@ -110,7 +110,7 @@ def test_recurrent(
         ),
         (
             {
-                "cell": FRng(
+                "cell": F(
                     lambda xh, rng: ((xh[0], rng), xh[1]),
                     lambda xh, rng: ((xh[0] + xh[1], rng), xh[1] + 2)
                 ),
@@ -149,7 +149,7 @@ def test_recurrent_rng(
     config, xh, rng, expected_train_output, expected_infer_output
 ):
     layer, (t_acts, _), (i_acts, _) = layer_test_results(
-        RecurrentRng, config, xh, rng, y_vmap_axis=((0, None), 0)
+        Recurrent, config, xh, rng, y_vmap_axis=((0, None), 0)
     )
     assert layer.cell.initialized is True
 

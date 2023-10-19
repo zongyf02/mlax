@@ -9,7 +9,7 @@ from jax import (
 )
 from mlax import Parameter, Module
 from mlax._utils import (
-    _canon_int_sequence,
+    _canon_norm_axis,
     _compute_std_stats,
     _standardize
 )
@@ -49,9 +49,7 @@ class ZNorm(Module):
         super().__init__()
 
         self.rng = rng
-        self.axis = (
-            str(axis) if isinstance(axis, str) else _canon_int_sequence(axis, 1)
-        )
+        self.axis = _canon_norm_axis(axis)
         self.epsilon = float(epsilon)
         self.momentum = float(momentum)
         self.mean_initializer = mean_initializer
@@ -61,7 +59,7 @@ class ZNorm(Module):
         self.moving_mean = Parameter(trainable=False)
         self.moving_var = Parameter(trainable=False)
 
-    def setup(self, x: Array) -> None:
+    def set_up(self, x: Array) -> None:
         if self.axis == "channel_last":
             shape = x.shape[-1]
         elif self.axis == "channel_first":

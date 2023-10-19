@@ -42,7 +42,7 @@ class Scaler(Module):
 
         self.scaler_kernel = Parameter(trainable=True)
 
-    def setup(self, x: Array) -> None:
+    def set_up(self, x: Array) -> None:
         scaler_shape = [
             axis if axis != -1 else x.shape[i]
             for i, axis in enumerate(self.in_features) if axis != 0

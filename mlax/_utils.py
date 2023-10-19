@@ -1,6 +1,5 @@
 """Utilities."""
 from math import prod
-from inspect import signature
 from jax import (
     lax,
     dtypes
@@ -54,12 +53,6 @@ def _canon_norm_axis(axis):
         return str(axis)
     else:
         return _canon_int_sequence(axis, 1)
-
-def _needs_rng(module):
-    return signature(module.forward).parameters["rng"].default is not None
-
-def _needs_axis_name(fn):
-    return "axis_name" in signature(fn).parameters.keys()
 
 def _compute_std_stats(x, axis, norm_axis_name=()):
     n_elems = lax.convert_element_type(lax.mul(

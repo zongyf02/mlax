@@ -41,6 +41,12 @@ from mlax._test_utils import assert_close_array
             (0, 2),
             "N",
             nn.standardize(random.normal(random.PRNGKey(4), (1, 4, 3, 4)), (0, 1, 3))
+        ),
+        (
+            random.normal(random.PRNGKey(5), (1, 3, 4, 4)),
+            2,
+            "N",
+            nn.standardize(random.normal(random.PRNGKey(5), (1, 3, 4, 4)), (0, 3))
         )
     ]
 )

@@ -1,4 +1,4 @@
-# MLAX: Pure functional ML library built on top of Google JAX
+# MLAX: Functional NN library built on top of Google JAX
 
 [**Overview**](#overview)
 | [**Installation**](#installation)
@@ -7,7 +7,7 @@
 | [**Documentation**](https://mlax.readthedocs.io/en/latest/)
 
 ## What is MLAX?<a id="overview"></a>
-MLAX is a purely functional ML library built on top of Google [JAX](https://github.com/google/jax).
+MLAX is a purely functional neural network library built on top of Google [JAX](https://github.com/google/jax).
 
 MLAX follows object-oriented semantics like Keras and PyTorch but remains fully
 compatible with native JAX transformations.
@@ -41,19 +41,19 @@ class Linear(Module):
         self.kernel_weight = Parameter(trainable=True)
         self.bias_weight = Parameter(trainable=True)
     
-    # Define a ``init`` method for lazy initialziation of weights
-    def init(self, x):
+    # Define a ``set_up`` method for lazy initialziation of parameters
+    def set_up(self, x):
         rng1, rng2 = random.split(self.rng)
         self.kernel_weight.data = nn.initializers.lecun_normal()(
             rng1, (x.shape[-1], self.out_features)
         )
         self.bias_weight.data=nn.initializers.zeros(rng2, (self.out_features,))
 
-    # Define an ``apply`` method for the forward pass
-    def apply(
+    # Define an ``forward`` method for the forward pass
+    def forward(
         self, x, rng = None, inference_mode = False, batch_axis_name = ()
     ):
-        return x @ self.kernel_weight.data + self.bias_weight.data, self
+        return x @ self.kernel_weight.data + self.bias_weight.data
 ```
 
 It is fully compatible with native JAX transformations:
