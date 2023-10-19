@@ -4,7 +4,7 @@ from jax import (
     random,
     nn
 )
-from mlax.nn import Series, SeriesRng, Linear, Bias, F, FRng
+from mlax.nn import Series, Linear, Bias, F
 from mlax._test_utils import (
     layer_test_results,
     assert_equal_array,
@@ -69,15 +69,21 @@ def test_series(
                     in_features=-1,
                     bias_initializer=nn.initializers.ones
                 ),
-                FRng(
+                F(
                     train_fn=lambda x, rng: (x, rng),
                     infer_fn=lambda x, rng: (2 * x, rng)
                 )
             ]),
             jnp.ones((2, 4), jnp.bfloat16),
             random.PRNGKey(7),
-            (jnp.full((2, 3), 5, jnp.bfloat16), random.PRNGKey(7)),
-            (jnp.full((2, 3), 10, jnp.bfloat16), random.PRNGKey(7))
+            (
+                jnp.full((2, 3), 5, jnp.bfloat16),
+                random.fold_in(random.PRNGKey(7), 2)
+            ),
+            (
+                jnp.full((2, 3), 10, jnp.bfloat16),
+                random.fold_in(random.PRNGKey(7), 2)
+            )
         ),
     ]
 )
@@ -85,7 +91,7 @@ def test_series_rng(
     layers, x, rng, expected_train_output, expected_infer_output
 ):
     model, (t_acts, new_t_model), (i_acts, new_i_model) = layer_test_results(
-        SeriesRng, {"layers": layers}, x, rng=rng, y_vmap_axis=(0, None)
+        Series, {"layers": layers}, x, rng=rng, y_vmap_axis=(0, None)
     )
     assert model.layers.trainable is None
     assert isinstance(model.layers.data, list)

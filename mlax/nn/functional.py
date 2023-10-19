@@ -8,6 +8,7 @@ from jax import (
 )
 from mlax._utils import (
     _identity,
+    _canon_norm_axis,
     _canon_int_sequence,
     _canon_opt_int_sequence,
     _canon_padding,
@@ -334,14 +335,14 @@ def z_norm(
         normalization along all but the channel axis, assumed to be the last or
         first axis (instance norm).
     :param epsilon: Small number added to variance to avoid divisions by zero.
-        Default: 1e-05.
+    Default: 1e-05.
     :param batch_axis_name: Hashable or tuple of hashable representing
         the batch axis name(s) to normalize along in addition to those in
         ``axis``. Default: (), no normlization along any batch axis.
 
     :returns: ``x`` with normalization applied.
     """
-    axis = str(axis) if isinstance(axis, str) else _canon_int_sequence(axis, 1)
+    axis = _canon_norm_axis(axis)
     if axis == "all":
         axis = list(range(x.ndim))
     elif axis == "channel_last":

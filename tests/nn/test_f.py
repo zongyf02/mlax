@@ -4,7 +4,7 @@ from jax import (
     random,
     lax
 )
-from mlax.nn import F, FRng
+from mlax.nn import F
 from mlax._test_utils import (
     layer_test_results,
     assert_equal_array,
@@ -85,7 +85,7 @@ def test_f(config, x, expected_train_output, expected_infer_output):
 )
 def test_f_rng(config, x, rng, expected_train_output, expected_infer_output):
     _, (t_acts, _), (i_acts, _) = layer_test_results(
-        FRng, config, x, rng=rng, y_vmap_axis=(0, None)
+        F, config, x, rng=rng, y_vmap_axis=(0, None)
     )
     assert_equal_pytree(t_acts, expected_train_output)
     assert_equal_pytree(i_acts, expected_infer_output)
