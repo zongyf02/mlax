@@ -42,7 +42,7 @@ class Recurrent(Module):
             return (cell, hidden, i + 1), x
 
         xs, hidden = xh
-        if self.cell.initialized is False:
+        if self.cell.is_set_up is False:
             if self.reverse is False:
                 x = jtu.tree_map(lambda xs: xs[0], xs)
                 xs = jtu.tree_map(lambda xs: xs[1:], xs)

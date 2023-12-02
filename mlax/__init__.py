@@ -1,7 +1,15 @@
 from mlax.module import (
+    Variable,
     Parameter,
-    is_trainable_param,
-    is_non_trainable_param,
-    is_leaf_param,
-    Module
+    Container,
+    Module,
+    is_leaf_state,
+    is_branch_state,
+    is_variable,
+    is_parameter,
+    is_frozen_param,
+    is_unfrozen_param,
+    is_container,
+    is_module
 )
+from mlax.nn import *

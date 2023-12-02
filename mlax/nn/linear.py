@@ -6,7 +6,7 @@ from jax import (
     lax,
     dtypes
 )
-from mlax import Parameter, Module
+from mlax import Parameter, Variable, Module
 from mlax._utils import (
     _canon_opt_dtype,
     _canon_precision_pair
@@ -45,7 +45,7 @@ class Linear(Module):
         """
         super().__init__()
 
-        self.rng = rng
+        self.rng = Variable(data=rng)
         self.out_features = int(out_features)
         self.precision = _canon_precision_pair(precision)
         self.accum_dtype = _canon_opt_dtype(accum_dtype)
@@ -53,11 +53,11 @@ class Linear(Module):
         self.transposed_kernel = transposed_kernel
         self.dtype = dtypes.canonicalize_dtype(dtype)
 
-        self.linear_kernel = Parameter(trainable=True)
+        self.linear_kernel = Parameter()
 
     def set_up(self, x: Array) -> None:
         self.linear_kernel.data = self.kernel_initializer(
-            self.rng, (x.shape[-1], self.out_features), self.dtype
+            self.rng.data, (x.shape[-1], self.out_features), self.dtype
         )
         if self.transposed_kernel:
             self.linear_kernel.data = lax.transpose(

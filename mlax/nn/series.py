@@ -3,7 +3,7 @@ from jax import (
     Array,
     random
 )
-from mlax import Module, Parameter
+from mlax import Container, Module
 
 class Series(Module):
     """Combination of layers."""
@@ -13,7 +13,7 @@ class Series(Module):
         :param layers: Layers to combine in series.
         """
         super().__init__()
-        self.layers = Parameter(trainable=None, data=list(layers))
+        self.layers = Container(list(layers))
 
     def set_up(self, x: Any) -> None:
         pass
@@ -25,8 +25,8 @@ class Series(Module):
         inference_mode: bool=False,
         batch_axis_name: Union[Hashable, Tuple[Hashable]]=()
     ) -> Any:
-        for i, layer in enumerate(self.layers.data):
-            x, self.layers.data[i] = layer(
+        for i, layer in enumerate(self.layers.states):
+            x, self.layers.states[i] = layer(
                 x, None if rng is None else random.fold_in(rng, i),
                 inference_mode, batch_axis_name
             )

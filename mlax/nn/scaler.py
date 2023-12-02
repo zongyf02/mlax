@@ -6,7 +6,7 @@ from jax import (
     lax,
     dtypes
 )
-from mlax import Parameter, Module
+from mlax import Parameter, Variable, Module
 from mlax._utils import _canon_int_sequence
 
 class Scaler(Module):
@@ -35,12 +35,12 @@ class Scaler(Module):
         """
         super().__init__()
 
-        self.rng = rng
+        self.rng = Variable(data=rng)
         self.in_features = _canon_int_sequence(in_features, 1)
         self.scaler_initializer = scaler_initializer
         self.dtype = dtypes.canonicalize_dtype(dtype)
 
-        self.scaler_kernel = Parameter(trainable=True)
+        self.scaler_kernel = Parameter()
 
     def set_up(self, x: Array) -> None:
         scaler_shape = [
@@ -48,7 +48,7 @@ class Scaler(Module):
             for i, axis in enumerate(self.in_features) if axis != 0
         ]
         self.scaler_kernel.data=self.scaler_initializer(
-            self.rng, scaler_shape, self.dtype
+            self.rng.data, scaler_shape, self.dtype
         )
     
     def forward(

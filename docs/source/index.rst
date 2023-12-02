@@ -8,7 +8,6 @@ Welcome to MLAX's documentation!
    overview
    module
    nn
-   faq
    apidocs/modules 
 
 

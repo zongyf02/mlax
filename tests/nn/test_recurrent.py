@@ -67,7 +67,7 @@ def test_recurrent(
     layer, (t_acts, _), (i_acts, _) = layer_test_results(
         Recurrent, config, xh
     )
-    assert layer.cell.initialized is True
+    assert layer.cell.is_set_up is True
 
     assert_equal_pytree(t_acts, expected_train_output)
     assert_equal_pytree(i_acts, expected_infer_output)
@@ -151,7 +151,7 @@ def test_recurrent_rng(
     layer, (t_acts, _), (i_acts, _) = layer_test_results(
         Recurrent, config, xh, rng, y_vmap_axis=((0, None), 0)
     )
-    assert layer.cell.initialized is True
+    assert layer.cell.is_set_up is True
 
     assert_equal_pytree(t_acts, expected_train_output)
     assert_equal_pytree(i_acts, expected_infer_output)

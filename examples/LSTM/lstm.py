@@ -4,7 +4,7 @@ from jax import (
     nn,
     numpy as jnp
 )
-from mlax import Module
+from mlax import Variable, Module
 from mlax.nn import Linear, Bias, Recurrent
 from mlax.nn.functional import dropout
 
@@ -17,7 +17,7 @@ class LSTMCell(Module):
         """
         super().__init__()
 
-        self.rng = rng
+        self.rng = Variable(data=rng)
 
         self.input_projs = None
         self.hidden_state_projs = None
@@ -27,12 +27,12 @@ class LSTMCell(Module):
         _, (_, cell_state) = xhc
         proj_len = len(cell_state) * 4
         self.input_projs = Linear(
-            random.fold_in(self.rng, 0), proj_len, transposed_kernel=True
+            random.fold_in(self.rng.data, 0), proj_len, transposed_kernel=True
         )
         self.hidden_state_projs = Linear(
-            random.fold_in(self.rng, 1), proj_len, transposed_kernel=True
+            random.fold_in(self.rng.data, 1), proj_len, transposed_kernel=True
         )
-        self.biases = Bias(random.fold_in(self.rng, 2), -1)
+        self.biases = Bias(random.fold_in(self.rng.data, 2), -1)
     
     def forward(self, xhc, rng=None, inference_mode=False, batch_axis_name=()):
         # x: (seq_len, x_depth)
@@ -75,15 +75,15 @@ class BiLSTMBlock(Module):
         """
         super().__init__()
 
-        self.rng = rng
+        self.rng = Variable(data=rng)
         self.hidden_size = hidden_size
         self.dropout_rate = dropout_rate
 
         self.lstm1 = Recurrent(
-            LSTMCell(random.fold_in(self.rng, 0)), reverse=False
+            LSTMCell(random.fold_in(self.rng.data, 0)), reverse=False
         )
         self.lstm2 = Recurrent(
-            LSTMCell(random.fold_in(self.rng, 1)), reverse=True
+            LSTMCell(random.fold_in(self.rng.data, 1)), reverse=True
         )
 
     def set_up(self, xm):

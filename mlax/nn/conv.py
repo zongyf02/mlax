@@ -7,7 +7,7 @@ from jax import (
     lax,
     dtypes
 )
-from mlax import Parameter, Module
+from mlax import Parameter, Variable, Module
 from mlax._utils import (
     _canon_int_sequence,
     _canon_opt_int_sequence,
@@ -81,7 +81,7 @@ class Conv(Module):
         """
         super().__init__()
 
-        self.rng = rng
+        self.rng = Variable(data=rng)
         self.out_channels = int(out_channels)
         self.filter_shape = _canon_int_sequence(filter_shape)
         self.strides = _canon_int_sequence(strides)
@@ -99,7 +99,7 @@ class Conv(Module):
         self.kernel_initializer = kernel_initializer
         self.dtype = dtypes.canonicalize_dtype(dtype)
 
-        self.conv_kernel = Parameter(trainable=True)
+        self.conv_kernel = Parameter()
         self.dimension_numbers = None
 
     def set_up(self, x: Array) -> None:
@@ -117,7 +117,7 @@ class Conv(Module):
                     dim += 1
 
             self.conv_kernel.data = self.kernel_initializer(
-                self.rng,
+                self.rng.data,
                 [*filter_shape, x.shape[channel_dim], self.out_channels],
                 self.dtype
             )
@@ -138,7 +138,7 @@ class Conv(Module):
 
             if self.data_format == "channel_last":
                 self.conv_kernel.data = self.kernel_initializer(
-                    self.rng,
+                    self.rng.data,
                     [*filter_shape, x.shape[-1], self.out_channels],
                     self.dtype
                 )
@@ -155,7 +155,7 @@ class Conv(Module):
                 o_spec = i_spec
             elif self.data_format == "channel_first":
                 self.conv_kernel.data = self.kernel_initializer(
-                    self.rng,
+                    self.rng.data,
                     [*filter_shape, x.shape[0], self.out_channels],
                     self.dtype
                 )
