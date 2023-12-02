@@ -30,20 +30,20 @@ from jax import (
     nn,
     random
 )
-from mlax import Module, Parameter
+from mlax import Module, Parameter, Variable
 
 class Linear(Module):
     def __init__(self, rng, out_features):
         super().__init__()
-        self.rng = rng
+        self.rng = Variable(data=rng)
         self.out_features = out_features
         
-        self.kernel_weight = Parameter(trainable=True)
-        self.bias_weight = Parameter(trainable=True)
+        self.kernel_weight = Parameter()
+        self.bias_weight = Parameter()
     
     # Define a ``set_up`` method for lazy initialziation of parameters
     def set_up(self, x):
-        rng1, rng2 = random.split(self.rng)
+        rng1, rng2 = random.split(self.rng.data)
         self.kernel_weight.data = nn.initializers.lecun_normal()(
             rng1, (x.shape[-1], self.out_features)
         )

@@ -12,8 +12,9 @@ from mlax._utils import (
     _canon_int_sequence,
     _canon_opt_int_sequence,
     _canon_padding,
-    _compute_std_stats,
-    _standardize
+    _z_norm_stats,
+    _rms_norm_stats,
+    _apply_norm
 )
 
 def identity(*xs: Any) -> Any:
@@ -112,49 +113,28 @@ def pool(
     window_dilation = _canon_opt_int_sequence(window_dilation, n_spatial_dims)
 
     if data_format == "channel_last":
-        window_shape = window_shape + (1,)
-        strides = strides + (1,)
-        padding = padding + ((0, 0),) if isinstance(padding, tuple) else padding
-        input_dilation = (
-            input_dilation + (1,) if isinstance(input_dilation, tuple)
-            else input_dilation
-        )
-        window_dilation = (
-            window_dilation + (1,) if isinstance(window_dilation, tuple)
-            else window_dilation
-        )
+        channel_dim = n_spatial_dims
     elif data_format == "channel_first":
-        window_shape = (1,) + window_shape
-        strides = (1,) + strides
-        padding = ((0, 0),) + padding if isinstance(padding, tuple) else padding
-        input_dilation = (
-            (1,) + input_dilation if isinstance(input_dilation, tuple) else
-            input_dilation
-        )
-        window_dilation = (
-            (1,) + window_dilation if isinstance(window_dilation, tuple) else
-            window_dilation
-        )
+        channel_dim = 0
     else:
         channel_dim = data_format.index("C")
-        window_shape = (
-            window_shape[:channel_dim] + (1,) + window_shape[channel_dim:]
-        )
-        strides = (
-            strides[:channel_dim] + (1,) + strides[channel_dim:]
-        )
-        padding = (
-            padding[:channel_dim] + ((0, 0),) + padding[channel_dim:]
-            if isinstance(padding, tuple) else padding
-        )
-        input_dilation = (
-            input_dilation[:channel_dim] + (1,) + input_dilation[channel_dim:]
-            if isinstance(input_dilation, tuple) else input_dilation
-        )
-        window_dilation = (
-            window_dilation[:channel_dim] + (1,) + window_dilation[channel_dim:]
-            if isinstance(window_dilation, tuple) else window_dilation
-        )
+
+    window_shape = (
+        window_shape[:channel_dim] + (1,) + window_shape[channel_dim:]
+    )
+    strides = strides[:channel_dim] + (1,) + strides[channel_dim:]
+    padding = (
+        padding[:channel_dim] + ((0, 0),) + padding[channel_dim:]
+        if isinstance(padding, tuple) else padding
+    )
+    input_dilation = (
+        input_dilation[:channel_dim] + (1,) + input_dilation[channel_dim:]
+        if isinstance(input_dilation, tuple) else input_dilation
+    )
+    window_dilation = (
+        window_dilation[:channel_dim] + (1,) + window_dilation[channel_dim:]
+        if isinstance(window_dilation, tuple) else window_dilation
+    )
 
     return lax.reduce_window(
         x,
@@ -329,13 +309,12 @@ def z_norm(
 ):
     """Apply Z-score normalization.
 
-    :param axis: "all", "channel_last", "channel_first", axis, or sequence of
-        axes to normalize input features along. "all" indicates normalization
-        along all axes (layer norm). "channel_last" and "channel_first" indicate
-        normalization along all but the channel axis, assumed to be the last or
-        first axis (instance norm).
+    :param axis: "channel_last", "channel_first", axis, or sequence of axes to
+        normalize input features along. "channel_last" and "channel_first"
+        indicate normalization along all but the channel axis, assumed to be the
+        last or first axis (instance norm).
     :param epsilon: Small number added to variance to avoid divisions by zero.
-    Default: 1e-05.
+        Default: 1e-05.
     :param batch_axis_name: Hashable or tuple of hashable representing
         the batch axis name(s) to normalize along in addition to those in
         ``axis``. Default: (), no normlization along any batch axis.
@@ -343,11 +322,37 @@ def z_norm(
     :returns: ``x`` with normalization applied.
     """
     axis = _canon_norm_axis(axis)
-    if axis == "all":
-        axis = list(range(x.ndim))
-    elif axis == "channel_last":
+    if axis == "channel_last":
         axis = list(range(x.ndim - 1))
     elif axis == "channel_first":
         axis = list(range(1, x.ndim))
-    mean, variance = _compute_std_stats(x, axis, batch_axis_name)
-    return _standardize(x, axis, mean, variance, epsilon)
+    mean, variance = _z_norm_stats(x, axis, batch_axis_name)
+    return _apply_norm(x, axis, mean, variance, epsilon)
+
+def rms_norm(
+    x: Array,
+    axis: Union[str, int, Sequence[int]],
+    batch_axis_name: Union[Hashable, Tuple[Hashable]]=(),
+    epsilon: float=1e-05
+):
+    """ Apply RMS normalization.
+
+    :param axis: "channel_last", "channel_first", axis, or sequence of axes to
+        normalize input features along. "channel_last" and "channel_first"
+        indicate normalization along all but the channel axis, assumed to be the
+        last or first axis (instance norm).
+    :param epsilon: Small number added to variance to avoid divisions by zero.
+        Default: 1e-05.
+    :param batch_axis_name: Hashable or tuple of hashable representing
+        the batch axis name(s) to normalize along in addition to those in
+        ``axis``. Default: (), no normlization along any batch axis.
+
+    :returns: ``x`` with normalization applied.    
+    """
+    axis = _canon_norm_axis(axis)
+    if axis == "channel_last":
+        axis = list(range(x.ndim - 1))
+    elif axis == "channel_first":
+        axis = list(range(1, x.ndim))
+    mean_of_squares = _rms_norm_stats(x, axis, batch_axis_name)
+    return _apply_norm(x, axis, None, mean_of_squares, epsilon)

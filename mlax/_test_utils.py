@@ -31,7 +31,7 @@ def layer_test_results(
     calls.
     """
     layer = cls(**config)
-    assert layer.initialized is False
+    assert layer.is_set_up is False
 
     fwd_jit = jax.jit(
         jax.vmap(
@@ -50,7 +50,7 @@ def layer_test_results(
         False, # inference_mode
         batch_axis_name # batch axis name
     )
-    assert init_layer.initialized is True
+    assert init_layer.is_set_up is True
 
     infer_init_acts, init_layer = fwd_jit(
         layer,
@@ -59,7 +59,7 @@ def layer_test_results(
         True, # inference_mode
         batch_axis_name # batch axis name
     )
-    assert init_layer.initialized is True
+    assert init_layer.is_set_up is True
 
     train_acts, new_train_layer = fwd_jit(
         init_layer,

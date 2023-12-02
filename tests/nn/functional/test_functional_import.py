@@ -10,3 +10,4 @@ def test_import():
     assert hasattr(functional, "dot_product_attention_logits")
     assert hasattr(functional, "apply_attention_weights")
     assert hasattr(functional, "z_norm")
+    assert hasattr(functional, "rms_norm")

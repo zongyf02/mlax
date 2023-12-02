@@ -11,7 +11,7 @@ sys.path.insert(1, os.path.abspath("../../"))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'mlax'
-copyright = '2022, Yifan Zong'
+copyright = '2023, Yifan Zong'
 author = 'Yifan Zong'
 
 # -- General configuration ---------------------------------------------------

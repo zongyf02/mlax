@@ -7,11 +7,11 @@ from jax import (
     random,
     dtypes
 )
-from mlax import Parameter, Module
+from mlax import Parameter, Variable, Module
 from mlax._utils import (
     _canon_norm_axis,
-    _compute_std_stats,
-    _standardize
+    _z_norm_stats,
+    _apply_norm
 )
 
 class ZNorm(Module):
@@ -48,7 +48,7 @@ class ZNorm(Module):
         """
         super().__init__()
 
-        self.rng = rng
+        self.rng = Variable(data=rng)
         self.axis = _canon_norm_axis(axis)
         self.epsilon = float(epsilon)
         self.momentum = float(momentum)
@@ -56,8 +56,8 @@ class ZNorm(Module):
         self.variance_initializer = variance_initializer
         self.dtype = dtypes.canonicalize_dtype(dtype)
     
-        self.moving_mean = Parameter(trainable=False)
-        self.moving_var = Parameter(trainable=False)
+        self.moving_mean = Parameter(frozen=True)
+        self.moving_var = Parameter(frozen=True)
 
     def set_up(self, x: Array) -> None:
         if self.axis == "channel_last":
@@ -68,10 +68,10 @@ class ZNorm(Module):
             shape = [x.shape[i] for i in range(x.ndim) if i not in self.axis]
 
         self.moving_mean.data = self.mean_initializer(
-            random.fold_in(self.rng, 0), shape, self.dtype
+            random.fold_in(self.rng.data, 0), shape, self.dtype
         )
         self.moving_var.data = self.variance_initializer(
-            random.fold_in(self.rng, 1), shape, self.dtype
+            random.fold_in(self.rng.data, 1), shape, self.dtype
         )
 
     def forward(
@@ -92,7 +92,7 @@ class ZNorm(Module):
             mean = lax.convert_element_type(self.moving_mean.data, x.dtype)
             variance = lax.convert_element_type(self.moving_var.data, x.dtype)
         else:
-            mean, variance = _compute_std_stats(x, axis, batch_axis_name)
+            mean, variance = _z_norm_stats(x, axis, batch_axis_name)
 
             # Update running stats
             one_m_momemtum = 1.0 - self.momentum
@@ -113,4 +113,4 @@ class ZNorm(Module):
                 )
             ), self.moving_var.data.dtype)
 
-        return _standardize(x, axis, mean, variance, self.epsilon)
+        return _apply_norm(x, axis, mean, variance, self.epsilon)

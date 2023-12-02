@@ -40,7 +40,9 @@ def _canon_padding(padding, n_spatial_dims=None):
         if n_spatial_dims is None:
             return int(padding)
         else:
-            return tuple([(int(padding), int(padding))] * n_spatial_dims)
+            return tuple(
+                (int(padding), int(padding)) for _ in range(n_spatial_dims)
+            )
     else:
         return tuple(
             (int(dim), int(dim)) if isinstance(dim, int)
@@ -54,7 +56,7 @@ def _canon_norm_axis(axis):
     else:
         return _canon_int_sequence(axis, 1)
 
-def _compute_std_stats(x, axis, norm_axis_name=()):
+def _z_norm_stats(x, axis, norm_axis_name=()):
     n_elems = lax.convert_element_type(lax.mul(
         prod(d for i, d in enumerate(x.shape) if i in axis),
         lax.psum(1, norm_axis_name)
@@ -74,10 +76,27 @@ def _compute_std_stats(x, axis, norm_axis_name=()):
     )
     return mean, variance
 
-def _standardize(x, axis, mean, variance, epsilon=1e-05):
+def _rms_norm_stats(x, axis, norm_axis_name=()):
+    n_elems = lax.convert_element_type(lax.mul(
+        prod(d for i, d in enumerate(x.shape) if i in axis),
+        lax.psum(1, norm_axis_name)
+    ), x.dtype)
+    mean_of_squares = lax.div(
+        lax.psum(
+            lax.reduce(lax.integer_pow(x, 2), 0, lax.add, axis), norm_axis_name
+        ),
+        n_elems
+    )
+    return mean_of_squares
+
+def _apply_norm(x, axis, mean, variance, epsilon=1e-05):
     broadcast_dims = [i for i in range(x.ndim) if i not in axis]
+    
+    if mean is not None:
+        x = lax.sub(x, lax.broadcast_in_dim(mean, x.shape, broadcast_dims))
+
     return lax.mul(
-        lax.sub(x, lax.broadcast_in_dim(mean, x.shape, broadcast_dims)),
+        x,
         lax.broadcast_in_dim(
             lax.rsqrt(
                 lax.add(variance, lax.convert_element_type(epsilon, x.dtype))

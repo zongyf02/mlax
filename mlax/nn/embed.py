@@ -1,5 +1,5 @@
 from typing import Tuple, Union, Hashable
-from mlax import Parameter, Module
+from mlax import Parameter, Variable, Module
 from jax import (
     Array,
     numpy as jnp,
@@ -30,17 +30,17 @@ class Embed(Module):
         """
         super().__init__()
 
-        self.rng = rng
+        self.rng = Variable(data=rng)
         self.vocab_size = int(vocab_size)
         self.embed_dim = int(embed_dim)
         self.embed_initializer = embed_initializer
         self.dtype = dtypes.canonicalize_dtype(dtype)
 
-        self.embed_kernel = Parameter(trainable=True)
+        self.embed_kernel = Parameter()
 
     def set_up(self, x: Array) -> None:
         self.embed_kernel.data=self.embed_initializer(
-            self.rng, (self.vocab_size, self.embed_dim), self.dtype
+            self.rng.data, (self.vocab_size, self.embed_dim), self.dtype
         )
 
     def forward(

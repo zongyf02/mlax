@@ -6,7 +6,7 @@ from jax import (
     lax,
     dtypes
 )
-from mlax import Parameter, Module
+from mlax import Parameter, Variable, Module
 from mlax._utils import _canon_int_sequence
 
 class Bias(Module):
@@ -35,12 +35,12 @@ class Bias(Module):
         """
         super().__init__()
 
-        self.rng = rng
+        self.rng = Variable(data=rng)
         self.in_features = _canon_int_sequence(in_features, 1)
         self.bias_initializer = bias_initializer
         self.dtype = dtypes.canonicalize_dtype(dtype)
 
-        self.bias_kernel = Parameter(trainable=True)
+        self.bias_kernel = Parameter()
 
     def set_up(self, x: Array) -> None:
         bias_shape = [
@@ -48,7 +48,7 @@ class Bias(Module):
             for i, axis in enumerate(self.in_features) if axis != 0
         ]
         self.bias_kernel.data = self.bias_initializer(
-            self.rng, bias_shape, self.dtype
+            self.rng.data, bias_shape, self.dtype
         )
 
     def forward(
